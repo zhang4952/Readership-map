@@ -2,200 +2,23 @@
 <html>
 
 <head>
-
-<title>Readership Map</title>
-<style type="text/css">
-  html, body { height: 100%; margin: 0; padding: 0; }
-  #map { height: 100%; }
-</style>
-
+  <title>Prototype | Readership Map</title>
 </head>
 
 <body>
+  <h1>Readership Map Prototype</h1>
+  <p>Maps today&rsquo;s pageviews for the selected Google Analytics profile.</p>
+  <div id="map" style="width: 580px; height: 320px"></div>
+  <textarea id="data-text" cols="80" rows="20" style="display: block"></textarea>
+  <button id="auth-button" onclick="authorize(event)" hidden>Authorize</button>
+  <select id="account-select" onchange="handleAccountChange()" hidden></select>
+  <select id="property-select" onchange="handlePropertyChange()" hidden></select>
+  <select id="profile-select" onchange="handleProfileChange()" hidden></select>
+  <button id="go-button" onclick="go()" hidden>Go</button>
 
-<!-- Analytics -->
-<!-- Based on Google Analytics 'Hello Analytics' Javascript quickstart -->
-<!-- https://developers.google.com/analytics/devguides/reporting/core/v3/quickstart/web-js -->
-
-<h1>Readership Map</h1>
-
-<p>This application visualizes Google Analytics data on an embedded Google Map. Eventually it will display readership activity for a digital repository. Now it gets data from the first Google Analytics profile it finds (after you give authorization) and displays pins at the locations of users that generated pageviews.</p>
-
-<p>If you need to authorize the application to access your Google Analytics data, there will be a button here:</p>
-
-<button id="auth-button" hidden>Authorize</button>
-
-<h2>Google Analytics query results</h2>
-
-<textarea cols="80" rows="20" id="query-output"></textarea>
-
-<script>
-
-// Replace with your client ID from the developer console.
-var CLIENT_ID = '898001239502-trev8m96god6nlsiherb9q8g0qj5ktcj.apps.googleusercontent.com';
-
-// Set authorized scope.
-var SCOPES = ['https://www.googleapis.com/auth/analytics.readonly'];
-
-function authorize(event) {
-  // Handles the authorization flow.
-  // `immediate` should be false when invoked from the button click.
-  var useImmediate = event ? false : true;
-  var authData = {
-    client_id: CLIENT_ID,
-    scope: SCOPES,
-    immediate: useImmediate
-  };
-
-  gapi.auth.authorize(authData, function(response) {
-      var authButton = document.getElementById('auth-button');
-      if (response.error) {
-        authButton.hidden = false;
-      } else {
-        authButton.hidden = true;
-        queryAccounts();
-      }
-    });
-}
-
-function queryAccounts() {
-  // Load the Google Analytics client library.
-  gapi.client.load('analytics', 'v3').then(function() {
-      // Get a list of all Google Analytics accounts for this user
-      gapi.client.analytics.management.accounts.list().then(handleAccounts);
-    });
-}
-
-function handleAccounts(response) {
-  // Handles the response from the accounts list method.
-  if (response.result.items && response.result.items.length) {
-    // Get the first Google Analytics account.
-    var firstAccountId = response.result.items[0].id;
-
-    // Query for properties.
-    queryProperties(firstAccountId);
-  } else {
-    console.log('No accounts found for this user.');
-  }
-}
-
-function queryProperties(accountId) {
-  // Get a list of all the properties for the account.
-  gapi.client.analytics.management.webproperties.list(
-      {'accountId': accountId})
-    .then(handleProperties)
-    .then(null, function(err) {
-        // Log any errors.
-        console.log(err);
-      });
-}
-
-function handleProperties(response) {
-  // Handles the response from the webproperties list method.
-  if (response.result.items && response.result.items.length) {
-    // Get the first Google Analytics account
-    var firstAccountId = response.result.items[0].accountId;
-
-    // Get the first property ID
-    var firstPropertyId = response.result.items[0].id;
-
-    // Query for Views (Profiles).
-    queryProfiles(firstAccountId, firstPropertyId);
-  } else {
-    console.log('No properties found for this user.');
-  }
-}
-
-function queryProfiles(accountId, propertyId) {
-  // Get a list of all Views (Profiles) for the first property
-  // of the first Account.
-  gapi.client.analytics.management.profiles.list({
-      'accountId': accountId,
-      'webPropertyId': propertyId
-    })
-    .then(handleProfiles)
-    .then(null, function(err) {
-        // Log any errors.
-        console.log(err);
-      });
-}
-
-function handleProfiles(response) {
-  // Handles the response from the profiles list method.
-  if (response.result.items && response.result.items.length) {
-    // Get the first View (Profile) ID.
-    var firstProfileId = response.result.items[0].id;
-
-    // Query the Core Reporting API.
-    queryCoreReportingApi(firstProfileId);
-  } else {
-    console.log('No views (profiles) found for this user.');
-  }
-}
-
-function queryCoreReportingApi(profileId) {
-  // Query the Core Reporting API for the number sessions for
-  // the past seven days.
-  gapi.client.analytics.data.ga.get({
-      'ids': 'ga:' + profileId,
-      'start-date': 'today',
-      'end-date': 'today',
-      'metrics': 'ga:pageviews',
-      'dimensions': 'ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city',
-      'sort': 'ga:hour,ga:minute'
-    })
-    .then(function(response) {
-        var formattedJson = JSON.stringify(response.result, null, 2);
-        document.getElementById('query-output').value = formattedJson;
-
-        // Place markers for each data row.
-        for (var i = 0; i < response.result.rows.length; i++) {
-          var row = response.result.rows[i];
-          var latLng = { lat: Number(row[2]), lng: Number(row[3]) }
-          var newMarker = new google.maps.Marker(
-            {
-              position: latLng,
-              map: map,
-              title: row[4],
-            });
-        }
-      })
-    .then(null, function(err) {
-        // Log any errors.
-        console.log(err);
-      });
-}
-
-// Add an event listener to the 'auth-button'.
-document.getElementById('auth-button').addEventListener('click', authorize);
-</script>
-
-<script src="https://apis.google.com/js/client.js?onload=authorize"></script>
-
-
-<!-- Map -->
-<!-- Based on Google Maps Javscript API 'Hello, World' example -->
-<!-- https://developers.google.com/maps/documentation/javascript/tutorial -->
-
-<h2>Map with pageviews marked</h2>
-
-<div id="map" style="width: 600px; height: 400px"></div>
-<script type="text/javascript">
-
-// Initialize map.
-var map;
-function initMap() {
-  map = new google.maps.Map(document.getElementById('map'),
-    {
-      center: {lat: 34.43, lng: -47.48},
-      zoom: 2
-    });
-}
-
-</script>
-<script async defer
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=initMap">
-</script>
-
+  <script src="rm.js"></script>
+  <script src="https://apis.google.com/js/client.js?onload=authorize"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=initMap"></script>
 </body>
+
 </html>
