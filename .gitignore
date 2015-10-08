@@ -1,5 +1,3 @@
-sites
-
 *.rbc
 capybara-*.html
 .rspec
