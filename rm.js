@@ -8,6 +8,21 @@ var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 var map;
 var markers = [];
 
+// Timing variables (Date objects)
+var virtualTime, lastDisplayTime;
+var queryStart, queryEnd;
+
+// Interval timers
+var queryTimer, displayTimer;
+
+// Timing parameters (minutes)
+var queryDelay = 5;
+var queryInterval = 15;
+var displayInterval = 1;
+
+// Data stack
+var data = [];
+
 //// Main application flow ////
 
 function authorize(event) {
@@ -153,54 +168,133 @@ function handleProfileChange() {
 }
 
 function go() {
-  getData(selectedProfile());
+  console.log("going...");
+  queryTimer = setInterval(query, 60000 * queryInterval);
+  displayTimer = setInterval(display, 60000 * displayInterval);
+  queryEnd = new Date();
+  queryEnd.setMinutes(queryEnd.getMinutes() -
+    queryDelay - queryInterval);
+  query();
+  document.getElementById("stop-button").hidden = false;
+  logVariables();
 }
 
-function getData(profileId) {
+function stop() {
+  console.log("stopping...");
+  clearTimeout(queryTimer);
+  clearTimeout(displayTimer);
+  logVariables();
+}
+
+function logVariables() {
+  console.log("virtualTime     = " + virtualTime);
+  console.log("queryStart      = " + queryStart);
+  console.log("queryEnd        = " + queryEnd);
+  console.log("lastDisplayTime = " + lastDisplayTime);
+  console.log("data            = " + data);
+}
+
+function query() {
+  console.log("querying...");
+  queryStart = queryEnd;
+  queryEnd = new Date();
+  queryEnd.setMinutes(queryEnd.getMinutes() - queryDelay);
   var params = {
-    "ids": "ga:" + profileId,
+    "ids": "ga:" + selectedProfile(),
     "start-date": "today",
     "end-date": "today",
     "metrics": "ga:pageviews",
     "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
-    "sort": "ga:hour,ga:minute"
+    "sort": "-ga:hour,-ga:minute"
   };
   var query = gapi.client.analytics.data.ga.get(params);
-  query.execute(showData);
+  logVariables();
+  query.execute(handleQueryResponse);
 }
 
-function showData(response) {
+function handleQueryResponse(response) {
+  console.log("handling response...");
   var dataTextArea = document.getElementById("data-text");
   if (response && !response.error) {
     var formattedJson = JSON.stringify(response.result, null, 2);
     dataTextArea.value = formattedJson;
-    markMap(response.result.rows);
+
+    var rawRows = response.result.rows;
+    for (var i = 0; i < rawRows.length; i++) {
+      if (rowIsInQueryInterval(rawRows[i])) {
+        data.push([timeFromRow(rawRows[i]), dataFromRow(rawRows[i])]);
+      }
+    }
+
+    virtualTime = queryStart;
+    lastDisplayTime = new Date();
+    logVariables();
+    display();
   } else {
     if (!response) {
       console.log("Data query response null");
     } else if (response.error) {
-      console.log("Data query error: " + error.message);
+      console.log("Data query error: " + response.error.message);
     }
     dataTextArea.value = "Query failed";
     clearMap();
   }
 }
 
-function markMap(rows) {
-  clearMap();
-  if (rows) {
-    for (var i = 0; i < rows.length; i++) {
-      var params = {
-        position: {
-          lat: parseFloat(rows[i][2]),
-          lng: parseFloat(rows[i][3])
-        },
-        title: rows[i][4]
+function rowIsInQueryInterval(row) {
+  var time = timeFromRow(row);
+  return (time >= queryStart && time < queryEnd);
+}
+
+function timeFromRow(row) {
+  if (row && row.length >= 2) {
+    var hour = parseInt(row[0]);
+    var minute = parseInt(row[1]);
+    var time = new Date();
+    time.setHours(hour);
+    time.setMinutes(minute);
+    return time;
+  } else {
+    console.log("timeFromRow(): invalid argument " + row);
+  }
+}
+
+function dataFromRow(row) {
+  if (row && row.length >= 5) {
+    return {
+        lat: parseFloat(row[2]),
+        lng: parseFloat(row[3]),
+        city: row[4]
       };
-      var marker = new google.maps.Marker(params);
-      marker.setMap(map);
-      markers.push(marker)
-    }
+  }
+}
+
+function display() {
+  console.log("displaying...");
+  var currentTime = new Date();
+  virtualTime.setMinutes(virtualTime.getMinutes() +
+    Math.round((currentTime - lastDisplayTime) / 60000));
+  while (data.length > 0 &&
+         data[data.length - 1][0] <= virtualTime) {
+    markOnMap(data.pop());
+  }
+  lastDisplayTime = currentTime;
+  logVariables();
+}
+
+function markOnMap(datum) {
+  if (datum && datum.length == 2) {
+    var params = {
+        position: {
+            lat: datum[1].lat,
+            lng: datum[1].lng
+          },
+        title: datum[1].city,
+        animation: google.maps.Animation.DROP
+      };
+    var marker = new google.maps.Marker(params);
+    marker.setMap(map);
+    markers.push(marker)
   }
 }
 
