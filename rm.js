@@ -1,14 +1,322 @@
 // rm.js - Readership Map Prototype
 
+//////// Main appication ////////
+
+// Timing variables (Date objects)
+var dataStartTime, dataEndTime;
+var virtualTime, lastDisplayTime;
+
+// Timing parameters (minutes)
+var queryDelay = 10;
+var queryInterval = 10;
+var displayInterval = 1;
+var MS_PER_MINUTE = 60000;
+
+// Interval timers
+var queryTimer, displayTimer, displayOneTimer;
+
+// Data and display stacks
+var dataStack, displayStack;
+
+// Global variables for the map
+var map;
+var markers = [];
+
+
+// Start the application
+function start() {
+  console.log("starting...");
+
+  // Initialize
+  clearMap();
+  dataStack = [];
+  displayStack = [];
+  dataStartTime = new Date();
+  dataStartTime.setMinutes(dataStartTime.getMinutes() -
+                           queryDelay -
+                           queryInterval);
+  dataEndTime = new Date(dataStartTime);
+  virtualTime = new Date(dataStartTime);
+  lastDisplayTime = new Date();
+  queryTimer = setInterval(query, MS_PER_MINUTE * queryInterval);
+  displayTimer = setInterval(display, MS_PER_MINUTE * displayInterval);
+  displayOneTimer = null;
+
+  document.getElementById("start-button").hidden = true;
+  document.getElementById("stop-button").hidden = false;
+
+  logState();
+
+  // Make initial query
+  query();
+}
+
+
+// Stop the application
+function stop() {
+  console.log("stopping...");
+
+  clearTimeout(queryTimer);
+  clearTimeout(displayTimer);
+  clearTimeout(displayOneTimer);
+
+  document.getElementById("start-button").hidden = false;
+  document.getElementById("stop-button").hidden = true;
+
+  logState();
+}
+
+
+// Query for data
+function query() {
+  console.log("querying...");
+
+  dataStartTime = dataEndTime;
+  dataEndTime = new Date();
+  dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
+  var params = {
+    "ids": "ga:" + selectedProfile(),
+    "start-date": "today",
+    "end-date": "today",
+    "metrics": "ga:pageviews",
+    "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
+    "sort": "-ga:hour,-ga:minute"
+  };
+  var query = gapi.client.analytics.data.ga.get(params);
+  query.execute(handleQueryResponse);
+}
+
+
+// Callback for data query
+function handleQueryResponse(response) {
+  console.log("handling response...");
+
+  if (response && !response.error) {
+    // Log the full response
+    var formattedJson = JSON.stringify(response.result, null, 2);
+    console.log("query response:");
+    console.log(formattedJson);
+    console.log("");
+
+    // Extract data in the desired time interval
+    var responseRows = response.result.rows;
+    for (var i = 0; i < responseRows.length; i++) {
+      if (rowInDataInterval(responseRows[i])) {
+        dataStack.push([timeFromRow(responseRows[i]),
+                        dataFromRow(responseRows[i])]);
+      }
+    }
+
+    // Update times
+    virtualTime = new Date(dataStartTime);
+    lastDisplayTime = new Date();
+
+    logState();
+
+    // Force display so that on application start, there's not
+    // a delay before first display
+    display();
+  } else {
+    if (!response) {
+      console.log("Data query response null");
+    } else if (response.error) {
+      console.log("Data query error: " + response.error.message);
+    }
+    dataTextArea.value = "Query failed";
+    clearMap();
+  }
+}
+
+
+// Display data with times now in the virtual past
+function display() {
+  console.log("displaying...");
+
+  // Update virtual time
+  var currentTime = new Date();
+  virtualTime.setMinutes(virtualTime.getMinutes() + Math.round(
+                         (currentTime - lastDisplayTime) / MS_PER_MINUTE));
+
+  // Flush the display stack
+  while (displayStack.length > 0) {
+    displayOne();
+  }
+
+  // Put data onto intermediate stack, then onto display stack,
+  // so that the correct order is maintained
+  var toDisplay = [];
+  while (dataStack.length > 0 &&
+         dataStack[dataStack.length - 1][0] <= virtualTime) {
+    toDisplay.push(dataStack.pop());
+  }
+  while (toDisplay.length > 0) {
+    displayStack.push(toDisplay.pop());
+  }
+
+  if (displayStack.length > 0) {
+    // Set up to display multiple data separately, spaced
+    // evenly over the display interval
+    if (displayStack.length > 1) {
+      displayOneTimer = setInterval(displayOne,
+        displayInterval * MS_PER_MINUTE / displayStack.length);
+    }
+    displayOne();
+  }
+
+  // Update time
+  lastDisplayTime = currentTime;
+
+  logState();
+}
+
+
+// Display a single datum
+function displayOne() {
+  console.log("displaying one...");
+
+  if (displayStack.length > 0) {
+    markOnMap(displayStack.pop());
+  }
+
+  // Clear timer if stack now empty
+  if (displayStack.length <= 0) {
+    clearTimeout(displayOneTimer);
+  }
+
+  logState();
+}
+
+
+// Mark a datum on the map
+function markOnMap(datum) {
+  if (datum && datum.length == 2) {
+    var params = {
+        position: {
+            lat: datum[1].lat,
+            lng: datum[1].lng
+          },
+        title: datum[1].city,
+        animation: google.maps.Animation.DROP
+      };
+    var marker = new google.maps.Marker(params);
+    marker.setMap(map);
+
+    // Store reference to marker so that it can
+    // be removed later
+    markers.push(marker)
+  }
+}
+
+
+// Is the data row in the desired time interval?
+function rowInDataInterval(row) {
+  var time = timeFromRow(row);
+  return (time >= dataStartTime && time < dataEndTime);
+}
+
+
+// Return a Date object representing the data row's time
+function timeFromRow(row) {
+  if (row && row.length >= 2) {
+    var hour = parseInt(row[0]);
+    var minute = parseInt(row[1]);
+    
+    // Base the time off the start of our data interval
+    var time = new Date(dataStartTime);
+    time.setHours(hour);
+    time.setMinutes(minute);
+
+    return time;
+  } else {
+    console.log("timeFromRow: invalid argument " + row);
+  }
+}
+
+
+// Return map object containing the row's data
+function dataFromRow(row) {
+  if (row && row.length >= 5) {
+    return {
+        lat: parseFloat(row[2]),
+        lng: parseFloat(row[3]),
+        city: row[4]
+      };
+  }
+}
+
+
+// Log the application state
+function logState() {
+  console.log("  dataStartTime: " + dataStartTime);
+  console.log("    dataEndTime: " + dataEndTime);
+  console.log("    virtualTime: " + virtualTime);
+  console.log("lastDisplayTime: " + lastDisplayTime);
+  console.log("      dataStack: (bottom-to-top)");
+  logStack(dataStack);
+  console.log("   displayStack: (bottom-to-top)");
+  logStack(displayStack);
+  console.log("");
+}
+
+
+// Log a data stack (array)
+function logStack(stack) {
+  if (stack.length >= 1) {
+    logStackRow(stack, 0);
+  }
+  if (stack.length >= 2 && stack.length <= 4) {
+    for (i = 1; i < stack.length; i++) {
+      logStackRow(stack, i);
+    }
+  }
+  if (stack.length >= 5) {
+    console.log("                 ...");
+    logStackRow(stack, stack.length - 2);
+    logStackRow(stack, stack.length - 1);
+  }
+}
+
+
+// Log one element of a stack
+function logStackRow(stack, i) {
+  console.log("                 " + 
+              stack[i][0] + " - " +
+              stack[i][1].city);
+}
+
+
+// Initialize the Google map
+function initMap() {
+  var params = {
+    center: {lat: 20, lng: 0},
+    zoom: 1
+  };
+  map = new google.maps.Map(document.getElementById("map"), params);
+}
+
+
+// Clear all markers from the map
+function clearMap() {
+  for (var i = 0; i < markers.length; i++) {
+    markers[i].setMap(null);
+    markers[i] = null;
+  }
+  markers = []
+}
+
+
+//////// Authorization and profile selection ////////
+
 // Google authorization parameters
 var CLIENT_ID = "898001239502-trev8m96god6nlsiherb9q8g0qj5ktcj.apps.googleusercontent.com";
 var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 
-//// Authorization and profile selection ////
 
+// Called as soon as Google API Client Library loads
 function authorize(event) {
-  // Use "immediate" to avoid authorization pop-up.
-  // Should not use "immediate" when Authorize button clicked.
+  // Use "immediate" to avoid authorization pop-up --
+  // should not use "immediate" when authorize() called
+  // because Authorize button was clicked
   var useImmediate = event ? false : true;
   var authParams = {
     client_id: CLIENT_ID,
@@ -18,6 +326,8 @@ function authorize(event) {
   gapi.auth.authorize(authParams, handleAuthorization);
 }
 
+
+// Callback for authorization
 function handleAuthorization(response) {
   var authButton = document.getElementById("auth-button");
   if (response.error) {
@@ -28,16 +338,22 @@ function handleAuthorization(response) {
   }
 }
 
+
+// Called as soon as Analytics API loads
 function getAccounts() {
   var request = gapi.client.analytics.management.accounts.list();
   request.execute(showAccounts);
 }
 
+
+// Put user accounts into a select element
+// and get properties for the default selection
 function showAccounts(results) {
   var accountSelect = document.getElementById("account-select");
   clearSelect(accountSelect);
   if (results && !results.error && results.items.length > 0) {
     var accounts = results.items;
+    accounts.sort(compareNames);
     for (var i = 0; i < accounts.length; i++) {
       var acctOption = document.createElement("option");
       acctOption.value = accounts[i].id;
@@ -57,15 +373,19 @@ function showAccounts(results) {
     accountSelect.hidden = true;
     document.getElementById("property-select").hidden = true;
     document.getElementById("profile-select").hidden = true;
-    document.getElementById("go-button").hidden = true;
+    document.getElementById("start-button").hidden = true;
     clearMap();
   }
 }
 
+
+// Account selection has changed
 function handleAccountChange() {
   getProperties(selectedAccount());
 }
 
+
+// Get properties for given account
 function getProperties(accountId) {
   var params = {
     "accountId": accountId
@@ -74,11 +394,15 @@ function getProperties(accountId) {
   request.execute(showProperties);
 }
 
+
+// Put user properties into a select element and
+// get profiles for the default selection
 function showProperties(results) {
   var propertySelect = document.getElementById("property-select");
   clearSelect(propertySelect);
   if (results && !results.error && results.items.length > 0) {
     var properties = results.items;
+    properties.sort(compareNames);
     for (var i = 0; i < properties.length; i++) {
       var propOption = document.createElement("option");
       propOption.value = properties[i].id;
@@ -98,15 +422,19 @@ function showProperties(results) {
     }
     propertySelect.hidden = true;
     document.getElementById("profile-select").hidden = true;
-    document.getElementById("go-button").hidden = true;
+    document.getElementById("start-button").hidden = true;
     clearMap();
   }
 }
 
+
+// Selected property has changed
 function handlePropertyChange() {
   getProfiles(selectedAccount(), selectedProperty());
 }
 
+
+// Get profiles for given account and property
 function getProfiles(accountId, propertyId) {
   var params = {
     "accountId": accountId,
@@ -116,11 +444,15 @@ function getProfiles(accountId, propertyId) {
   request.execute(showProfiles);
 }
 
+
+// Put user profiles in a select element and
+// un-hide the Start button
 function showProfiles(results) {
   var profileSelect = document.getElementById("profile-select");
   clearSelect(profileSelect);
   if (results && !results.error && results.items.length > 0) {
     var profiles = results.items;
+    profiles.sort(compareNames);
     for (var i = 0; i < profiles.length; i++) {
       var profOption = document.createElement("option");
       profOption.value = profiles[i].id;
@@ -138,257 +470,54 @@ function showProfiles(results) {
       console.log("No profiles for this account");
     }
     profileSelect.hidden = true;
-    document.getElementById("go-button").hidden = true;
+    document.getElementById("start-button").hidden = true;
     clearMap();
   }
 }
 
+
+// Selected profile has changed
 function handleProfileChange() {
-  var goButton = document.getElementById("go-button");
-  goButton.hidden = false;
+  var startButton = document.getElementById("start-button");
+  startButton.hidden = false;
 }
 
-//// Main appication ////
 
-// Timing variables (Date objects)
-var queryStart, queryEnd;
-var virtualTime, lastDisplayTime;
+// Return the selected Analytics account
+function selectedAccount() {
+  var accountSelect = document.getElementById("account-select");
+  return accountSelect.options[accountSelect.selectedIndex].value;
+}  
 
-// Timing parameters (minutes)
-var queryDelay = 5;
-var queryInterval = 15;
-var displayInterval = 1;
 
-// Interval timers
-var queryTimer, displayTimer, displayOneTimer;
-
-// Data and display stacks
-var dataStack, displayStack;
-
-// Global variables for the map
-var map;
-var markers = [];
-
-function go() {
-  console.log("going...");
-  clearMap();
-  dataStack = [];
-  displayStack = [];
-  queryStart = new Date();
-  queryStart.setMinutes(queryStart.getMinutes() -
-                        queryDelay -
-                        queryInterval);
-  queryEnd = new Date(queryStart);
-  virtualTime = new Date(queryStart);
-  lastDisplayTime = new Date();
-  queryTimer = setInterval(query, 60000 * queryInterval);
-  displayTimer = setInterval(display, 60000 * displayInterval);
-  displayOneTimer = null;
-  document.getElementById("stop-button").hidden = false;
-  logVariables();
-  query();
+// Return the selected Analytics Property
+function selectedProperty() {
+  var propertySelect = document.getElementById("property-select");
+  return propertySelect.options[propertySelect.selectedIndex].value;
 }
 
-function stop() {
-  console.log("stopping...");
-  clearTimeout(queryTimer);
-  clearTimeout(displayTimer);
-  clearTimeout(displayOneTimer);
-  logVariables();
+
+// Return the selected Analytics Profile
+function selectedProfile() {
+  var profileSelect = document.getElementById("profile-select");
+  return profileSelect.options[profileSelect.selectedIndex].value;
 }
 
-function query() {
-  console.log("querying...");
-  queryStart = queryEnd;
-  queryEnd = new Date();
-  queryEnd.setMinutes(queryEnd.getMinutes() - queryDelay);
-  var params = {
-    "ids": "ga:" + selectedProfile(),
-    "start-date": "today",
-    "end-date": "today",
-    "metrics": "ga:pageviews",
-    "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
-    "sort": "-ga:hour,-ga:minute"
-  };
-  var query = gapi.client.analytics.data.ga.get(params);
-  logVariables();
-  query.execute(handleQueryResponse);
-}
 
-function handleQueryResponse(response) {
-  console.log("handling response...");
-  if (response && !response.error) {
-    var formattedJson = JSON.stringify(response.result, null, 2);
-    console.log(formattedJson);
-    var rawRows = response.result.rows;
-    for (var i = 0; i < rawRows.length; i++) {
-      if (rowIsInQueryInterval(rawRows[i])) {
-        dataStack.push([timeFromRow(rawRows[i]), dataFromRow(rawRows[i])]);
-      }
-    }
-
-    virtualTime = new Date(queryStart);
-    lastDisplayTime = new Date();
-    logVariables();
-    display();
-  } else {
-    if (!response) {
-      console.log("Data query response null");
-    } else if (response.error) {
-      console.log("Data query error: " + response.error.message);
-    }
-    dataTextArea.value = "Query failed";
-    clearMap();
-  }
-}
-
-function display() {
-  console.log("displaying...");
-  var currentTime = new Date();
-  virtualTime.setMinutes(virtualTime.getMinutes() +
-    Math.round((currentTime - lastDisplayTime) / 60000));
-  while (displayStack.length > 0) {
-    displayOne();
-  }
-  var toDisplay = [];
-  while (dataStack.length > 0 &&
-         dataStack[dataStack.length - 1][0] <= virtualTime) {
-    toDisplay.push(dataStack.pop());
-  }
-  while (toDisplay.length > 0) {
-    displayStack.push(toDisplay.pop());
-  }
-  if (displayStack.length > 0) {
-    if (displayStack.length > 1) {
-      displayOneTimer = setInterval(displayOne,
-        displayInterval * 60000 / displayStack.length);
-    }
-    displayOne();
-  }
-  lastDisplayTime = currentTime;
-  logVariables();
-}
-
-function displayOne() {
-  console.log("displaying one...");
-  if (displayStack.length > 0) {
-    markOnMap(displayStack.pop());
-  }
-  if (displayStack.length <= 0) {
-    clearTimeout(displayOneTimer);
-  }
-  logVariables();
-}
-
-function markOnMap(datum) {
-  if (datum && datum.length == 2) {
-    var params = {
-        position: {
-            lat: datum[1].lat,
-            lng: datum[1].lng
-          },
-        title: datum[1].city,
-        animation: google.maps.Animation.DROP
-      };
-    var marker = new google.maps.Marker(params);
-    marker.setMap(map);
-    markers.push(marker)
-  }
-}
-
-function rowIsInQueryInterval(row) {
-  var time = timeFromRow(row);
-  return (time >= queryStart && time < queryEnd);
-}
-
-function timeFromRow(row) {
-  if (row && row.length >= 2) {
-    var hour = parseInt(row[0]);
-    var minute = parseInt(row[1]);
-    var time = new Date(queryStart);
-    time.setHours(hour);
-    time.setMinutes(minute);
-    return time;
-  } else {
-    console.log("timeFromRow(): invalid argument " + row);
-  }
-}
-
-function dataFromRow(row) {
-  if (row && row.length >= 5) {
-    return {
-        lat: parseFloat(row[2]),
-        lng: parseFloat(row[3]),
-        city: row[4]
-      };
-  }
-}
-
-function logVariables() {
-  console.log("    virtualTime: " + virtualTime);
-  console.log("     queryStart: " + queryStart);
-  console.log("       queryEnd: " + queryEnd);
-  console.log("lastDisplayTime: " + lastDisplayTime);
-  console.log("      dataStack: (bottom-to-top)");
-  if (dataStack.length >=2) {
-    logStackRow(dataStack, 0);
-    logStackRow(dataStack, 1);
-  }
-  if (dataStack.length > 2 && dataStack.length <= 5) {
-    for (i = 2; i < dataStack.length; i++) {
-      logStackRow(dataStack, i);
-    }
-  }
-  if (dataStack.length > 5) {
-    console.log("                 ...");
-    logStackRow(dataStack, dataStack.length - 2);
-    logStackRow(dataStack, dataStack.length - 1);
-  }
-  console.log("   displayStack: (bottom-to-top)");
-  for (var i = 0; i < displayStack.length; i++) {
-    logStackRow(displayStack, i);
-  }
-}
-
-function logStackRow(stack, i) {
-  console.log("                 " + 
-              stack[i][0] + " - " +
-              stack[i][1].city);
-}
-
+// Clear a select HTML element
 function clearSelect(select) {
   while (select.options.length > 0) {
     select.remove(0);
   }
 }
 
-function selectedAccount() {
-  var accountSelect = document.getElementById("account-select");
-  return accountSelect.options[accountSelect.selectedIndex].value;
-}  
 
-function selectedProperty() {
-  var propertySelect = document.getElementById("property-select");
-  return propertySelect.options[propertySelect.selectedIndex].value;
-}
-
-function selectedProfile() {
-  var profileSelect = document.getElementById("profile-select");
-  return profileSelect.options[profileSelect.selectedIndex].value;
-}
-
-function initMap() {
-  var params = {
-    center: {lat: 34.43, lng: -47.48},
-    zoom: 2
-  };
-  map = new google.maps.Map(document.getElementById("map"), params);
-}
-
-function clearMap() {
-  for (var i = 0; i < markers.length; i++) {
-    markers[i].setMap(null);
-    markers[i] = null;
-  }
-  markers = []
+// Compare based on object's name
+function compareNames(a, b) {
+  if (a.name > b.name)
+    return 1;
+  else if (a.name < b.name)
+    return -1;
+  else
+    return 0;
 }
