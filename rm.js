@@ -4,26 +4,7 @@
 var CLIENT_ID = "898001239502-trev8m96god6nlsiherb9q8g0qj5ktcj.apps.googleusercontent.com";
 var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 
-// Global variables for the map
-var map;
-var markers = [];
-
-// Timing variables (Date objects)
-var virtualTime, lastDisplayTime;
-var queryStart, queryEnd;
-
-// Interval timers
-var queryTimer, displayTimer;
-
-// Timing parameters (minutes)
-var queryDelay = 5;
-var queryInterval = 15;
-var displayInterval = 1;
-
-// Data stack
-var data = [];
-
-//// Main application flow ////
+//// Authorization and profile selection ////
 
 function authorize(event) {
   // Use "immediate" to avoid authorization pop-up.
@@ -167,31 +148,53 @@ function handleProfileChange() {
   goButton.hidden = false;
 }
 
+//// Main appication ////
+
+// Timing variables (Date objects)
+var queryStart, queryEnd;
+var virtualTime, lastDisplayTime;
+
+// Timing parameters (minutes)
+var queryDelay = 5;
+var queryInterval = 15;
+var displayInterval = 1;
+
+// Interval timers
+var queryTimer, displayTimer, displayOneTimer;
+
+// Data and display stacks
+var dataStack, displayStack;
+
+// Global variables for the map
+var map;
+var markers = [];
+
 function go() {
   console.log("going...");
+  clearMap();
+  dataStack = [];
+  displayStack = [];
+  queryStart = new Date();
+  queryStart.setMinutes(queryStart.getMinutes() -
+                        queryDelay -
+                        queryInterval);
+  queryEnd = new Date(queryStart);
+  virtualTime = new Date(queryStart);
+  lastDisplayTime = new Date();
   queryTimer = setInterval(query, 60000 * queryInterval);
   displayTimer = setInterval(display, 60000 * displayInterval);
-  queryEnd = new Date();
-  queryEnd.setMinutes(queryEnd.getMinutes() -
-    queryDelay - queryInterval);
-  query();
+  displayOneTimer = null;
   document.getElementById("stop-button").hidden = false;
   logVariables();
+  query();
 }
 
 function stop() {
   console.log("stopping...");
   clearTimeout(queryTimer);
   clearTimeout(displayTimer);
+  clearTimeout(displayOneTimer);
   logVariables();
-}
-
-function logVariables() {
-  console.log("virtualTime     = " + virtualTime);
-  console.log("queryStart      = " + queryStart);
-  console.log("queryEnd        = " + queryEnd);
-  console.log("lastDisplayTime = " + lastDisplayTime);
-  console.log("data            = " + data);
 }
 
 function query() {
@@ -214,19 +217,17 @@ function query() {
 
 function handleQueryResponse(response) {
   console.log("handling response...");
-  var dataTextArea = document.getElementById("data-text");
   if (response && !response.error) {
     var formattedJson = JSON.stringify(response.result, null, 2);
-    dataTextArea.value = formattedJson;
-
+    console.log(formattedJson);
     var rawRows = response.result.rows;
     for (var i = 0; i < rawRows.length; i++) {
       if (rowIsInQueryInterval(rawRows[i])) {
-        data.push([timeFromRow(rawRows[i]), dataFromRow(rawRows[i])]);
+        dataStack.push([timeFromRow(rawRows[i]), dataFromRow(rawRows[i])]);
       }
     }
 
-    virtualTime = queryStart;
+    virtualTime = new Date(queryStart);
     lastDisplayTime = new Date();
     logVariables();
     display();
@@ -241,44 +242,41 @@ function handleQueryResponse(response) {
   }
 }
 
-function rowIsInQueryInterval(row) {
-  var time = timeFromRow(row);
-  return (time >= queryStart && time < queryEnd);
-}
-
-function timeFromRow(row) {
-  if (row && row.length >= 2) {
-    var hour = parseInt(row[0]);
-    var minute = parseInt(row[1]);
-    var time = new Date();
-    time.setHours(hour);
-    time.setMinutes(minute);
-    return time;
-  } else {
-    console.log("timeFromRow(): invalid argument " + row);
-  }
-}
-
-function dataFromRow(row) {
-  if (row && row.length >= 5) {
-    return {
-        lat: parseFloat(row[2]),
-        lng: parseFloat(row[3]),
-        city: row[4]
-      };
-  }
-}
-
 function display() {
   console.log("displaying...");
   var currentTime = new Date();
   virtualTime.setMinutes(virtualTime.getMinutes() +
     Math.round((currentTime - lastDisplayTime) / 60000));
-  while (data.length > 0 &&
-         data[data.length - 1][0] <= virtualTime) {
-    markOnMap(data.pop());
+  while (displayStack.length > 0) {
+    displayOne();
+  }
+  var toDisplay = [];
+  while (dataStack.length > 0 &&
+         dataStack[dataStack.length - 1][0] <= virtualTime) {
+    toDisplay.push(dataStack.pop());
+  }
+  while (toDisplay.length > 0) {
+    displayStack.push(toDisplay.pop());
+  }
+  if (displayStack.length > 0) {
+    if (displayStack.length > 1) {
+      displayOneTimer = setInterval(displayOne,
+        displayInterval * 60000 / displayStack.length);
+    }
+    displayOne();
   }
   lastDisplayTime = currentTime;
+  logVariables();
+}
+
+function displayOne() {
+  console.log("displaying one...");
+  if (displayStack.length > 0) {
+    markOnMap(displayStack.pop());
+  }
+  if (displayStack.length <= 0) {
+    clearTimeout(displayOneTimer);
+  }
   logVariables();
 }
 
@@ -298,7 +296,65 @@ function markOnMap(datum) {
   }
 }
 
-//// Data selection helpers ////
+function rowIsInQueryInterval(row) {
+  var time = timeFromRow(row);
+  return (time >= queryStart && time < queryEnd);
+}
+
+function timeFromRow(row) {
+  if (row && row.length >= 2) {
+    var hour = parseInt(row[0]);
+    var minute = parseInt(row[1]);
+    var time = new Date(queryStart);
+    time.setHours(hour);
+    time.setMinutes(minute);
+    return time;
+  } else {
+    console.log("timeFromRow(): invalid argument " + row);
+  }
+}
+
+function dataFromRow(row) {
+  if (row && row.length >= 5) {
+    return {
+        lat: parseFloat(row[2]),
+        lng: parseFloat(row[3]),
+        city: row[4]
+      };
+  }
+}
+
+function logVariables() {
+  console.log("    virtualTime: " + virtualTime);
+  console.log("     queryStart: " + queryStart);
+  console.log("       queryEnd: " + queryEnd);
+  console.log("lastDisplayTime: " + lastDisplayTime);
+  console.log("      dataStack: (bottom-to-top)");
+  if (dataStack.length >=2) {
+    logStackRow(dataStack, 0);
+    logStackRow(dataStack, 1);
+  }
+  if (dataStack.length > 2 && dataStack.length <= 5) {
+    for (i = 2; i < dataStack.length; i++) {
+      logStackRow(dataStack, i);
+    }
+  }
+  if (dataStack.length > 5) {
+    console.log("                 ...");
+    logStackRow(dataStack, dataStack.length - 2);
+    logStackRow(dataStack, dataStack.length - 1);
+  }
+  console.log("   displayStack: (bottom-to-top)");
+  for (var i = 0; i < displayStack.length; i++) {
+    logStackRow(displayStack, i);
+  }
+}
+
+function logStackRow(stack, i) {
+  console.log("                 " + 
+              stack[i][0] + " - " +
+              stack[i][1].city);
+}
 
 function clearSelect(select) {
   while (select.options.length > 0) {
@@ -320,8 +376,6 @@ function selectedProfile() {
   var profileSelect = document.getElementById("profile-select");
   return profileSelect.options[profileSelect.selectedIndex].value;
 }
-
-//// Map initialization & helpers ////
 
 function initMap() {
   var params = {

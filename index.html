@@ -7,9 +7,8 @@
 
 <body>
   <h1>Readership Map Prototype</h1>
-  <p>Maps today&rsquo;s pageviews for the selected Google Analytics profile.</p>
+  <p>Maps &ldquo;live&rdquo; pageviews (with delay) for the selected Google Analytics profile.</p>
   <div id="map" style="width: 580px; height: 320px"></div>
-  <textarea id="data-text" cols="80" rows="20" style="display: block"></textarea>
   <button id="auth-button" onclick="authorize(event)" hidden>Authorize</button>
   <select id="account-select" onchange="handleAccountChange()" hidden></select>
   <select id="property-select" onchange="handlePropertyChange()" hidden></select>
