@@ -2,6 +2,8 @@
 
 //////// Main appication ////////
 
+var SIMULATE_DATA = true;
+
 // Timing variables (Date objects)
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
@@ -42,8 +44,8 @@ function start() {
   displayTimer = setInterval(display, MS_PER_MINUTE * displayInterval);
   displayOneTimer = null;
 
-  document.getElementById("start-button").hidden = true;
-  document.getElementById("stop-button").hidden = false;
+  $("#start-button").hide();
+  $("#stop-button").show();
 
   logState();
 
@@ -60,8 +62,8 @@ function stop() {
   clearTimeout(displayTimer);
   clearTimeout(displayOneTimer);
 
-  document.getElementById("start-button").hidden = false;
-  document.getElementById("stop-button").hidden = true;
+  $("#start-button").show();
+  $("#stop-button").hide();
 
   logState();
 }
@@ -74,16 +76,22 @@ function query() {
   dataStartTime = dataEndTime;
   dataEndTime = new Date();
   dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
-  var params = {
-    "ids": "ga:" + selectedProfile(),
-    "start-date": "today",
-    "end-date": "today",
-    "metrics": "ga:pageviews",
-    "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
-    "sort": "-ga:hour,-ga:minute"
-  };
-  var query = gapi.client.analytics.data.ga.get(params);
-  query.execute(handleQueryResponse);
+  if (SIMULATE_DATA) {
+    $.get("data.json", function(data) {
+      handleQueryResponse(data);
+      });
+  } else {
+    var params = {
+      "ids": "ga:" + selectedProfile(),
+      "start-date": "today",
+      "end-date": "today",
+      "metrics": "ga:pageviews",
+      "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
+      "sort": "-ga:hour,-ga:minute"
+    };
+    var query = gapi.client.analytics.data.ga.get(params);
+    query.execute(handleQueryResponse);
+  }
 }
 
 
@@ -91,7 +99,8 @@ function query() {
 function handleQueryResponse(response) {
   console.log("handling response...");
 
-  if (response && !response.error) {
+  if (response && !response.error &&
+      response.result.rows && response.result.rows.length > 0) {
     // Log the full response
     var formattedJson = JSON.stringify(response.result, null, 2);
     console.log("query response:");
@@ -121,6 +130,8 @@ function handleQueryResponse(response) {
       console.log("Data query response null");
     } else if (response.error) {
       console.log("Data query error: " + response.error.message);
+    } else {
+      console.log("Data query returned zero rows");
     }
     dataTextArea.value = "Query failed";
     clearMap();
@@ -196,6 +207,7 @@ function markOnMap(datum) {
             lng: datum[1].lng
           },
         title: datum[1].city,
+        icon: "marker.png",
         animation: google.maps.Animation.DROP
       };
     var marker = new google.maps.Marker(params);
@@ -314,26 +326,33 @@ var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 
 // Called as soon as Google API Client Library loads
 function authorize(event) {
-  // Use "immediate" to avoid authorization pop-up --
-  // should not use "immediate" when authorize() called
-  // because Authorize button was clicked
-  var useImmediate = event ? false : true;
-  var authParams = {
-    client_id: CLIENT_ID,
-    immediate: useImmediate,
-    scope: SCOPES
-  };
-  gapi.auth.authorize(authParams, handleAuthorization);
+  if (SIMULATE_DATA) {
+    $("#account-select").hide();
+    $("#property-select").hide();
+    $("#profile-select").hide();
+    $("#stop-button").hide();
+    $("#start-button").show();
+  } else {
+    // Use "immediate" to avoid authorization pop-up --
+    // should not use "immediate" when authorize() called
+    // because Authorize button was clicked
+    var useImmediate = event ? false : true;
+    var authParams = {
+      client_id: CLIENT_ID,
+      immediate: useImmediate,
+      scope: SCOPES
+    };
+    gapi.auth.authorize(authParams, handleAuthorization);
+  }
 }
 
 
 // Callback for authorization
 function handleAuthorization(response) {
-  var authButton = document.getElementById("auth-button");
   if (response.error) {
-    authButton.hidden = false;
+    $("#auth-button").show();
   } else {
-    authButton.hidden = true;
+    $("#auth-button").hide();
     gapi.client.load("analytics", "v3", getAccounts);
   }
 }
@@ -371,9 +390,9 @@ function showAccounts(results) {
       console.log("No accounts for this user");
     }
     accountSelect.hidden = true;
-    document.getElementById("property-select").hidden = true;
-    document.getElementById("profile-select").hidden = true;
-    document.getElementById("start-button").hidden = true;
+    $("#property-select").hide();
+    $("#profile-select").hide();
+    $("#start-button").hide();
     clearMap();
   }
 }
@@ -421,8 +440,8 @@ function showProperties(results) {
       console.log("No properties for this account");
     }
     propertySelect.hidden = true;
-    document.getElementById("profile-select").hidden = true;
-    document.getElementById("start-button").hidden = true;
+    $("#profile-select").hide();
+    $("#start-button").hide();
     clearMap();
   }
 }
@@ -470,7 +489,7 @@ function showProfiles(results) {
       console.log("No profiles for this account");
     }
     profileSelect.hidden = true;
-    document.getElementById("start-button").hidden = true;
+    $("#start-button").hide();
     clearMap();
   }
 }
@@ -478,8 +497,7 @@ function showProfiles(results) {
 
 // Selected profile has changed
 function handleProfileChange() {
-  var startButton = document.getElementById("start-button");
-  startButton.hidden = false;
+  $("#start-button").hide();
 }
 
 
