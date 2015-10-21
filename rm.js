@@ -77,8 +77,9 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
   if (SIMULATE_DATA) {
+    console.log("(using simulated data)");
     $.get("data.json", function(data) {
-      handleQueryResponse(data);
+      handleQueryResponse(JSON.parse(data));
       });
   } else {
     var params = {
@@ -99,7 +100,7 @@ function query() {
 function handleQueryResponse(response) {
   console.log("handling response...");
 
-  if (response && !response.error &&
+  if (response && !response.error && response.result &&
       response.result.rows && response.result.rows.length > 0) {
     // Log the full response
     var formattedJson = JSON.stringify(response.result, null, 2);
@@ -130,10 +131,11 @@ function handleQueryResponse(response) {
       console.log("Data query response null");
     } else if (response.error) {
       console.log("Data query error: " + response.error.message);
+    } else if (!response.result) {
+      console.log("Data query response has no result field");
     } else {
       console.log("Data query returned zero rows");
     }
-    dataTextArea.value = "Query failed";
     clearMap();
   }
 }
