@@ -23,6 +23,7 @@ var dataStack, displayStack;
 // Global variables for the map
 var map;
 var markers = [];
+var infoWindows = [];
 
 
 // Start the application
@@ -226,11 +227,22 @@ function markOnMap(datum) {
         animation: google.maps.Animation.DROP
       };
     var marker = new google.maps.Marker(params);
+    var infoContent =
+      "<strong>An Essay towards solving " +
+      "a Problem in the Doctrine of Chances</strong>" +
+      "<br><em>Thomas Bayes (1763)</em>" +
+      "<hr>Reader in " + datum[1].city;
+    var infoWindow = new google.maps.InfoWindow(
+      { content: infoContent });
+    marker.addListener("click", function() {
+      infoWindow.open(map, marker);
+      });
     marker.setMap(map);
 
     // Store reference to marker so that it can
     // be removed later
-    markers.push(marker)
+    markers.push(marker);
+    infoWindows.push(infoWindow);
   }
 }
 
@@ -338,7 +350,11 @@ function clearMap() {
     markers[i].setMap(null);
     markers[i] = null;
   }
-  markers = []
+  markers = [];
+  for (var i = 0; i < infoWindows.length; i++) {
+    infoWindows[i].close();
+  }
+  infoWindows = [];
 }
 
 
