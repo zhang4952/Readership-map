@@ -352,7 +352,9 @@ function initMap() {
   var params = {
     center: {lat: 20, lng: 0},
     zoom: 2,
-    minZoom: 2
+    minZoom: 2,
+    mapTypeControl: false,
+    streetViewControl: false
   };
   map = new google.maps.Map(document.getElementById("map"), params);
 }
