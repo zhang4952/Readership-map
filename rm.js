@@ -381,6 +381,7 @@ var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 // Called as soon as Google API Client Library loads
 function authorize(event) {
   if (SIMULATE_DATA) {
+    $("#auth-button").hide();
     $("#account-select").hide();
     $("#property-select").hide();
     $("#profile-select").hide();
