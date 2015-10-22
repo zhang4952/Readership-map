@@ -233,7 +233,10 @@ function markOnMap(datum) {
       "<br><em>Thomas Bayes (1763)</em>" +
       "<hr>Reader in " + datum[1].city;
     var infoWindow = new google.maps.InfoWindow(
-      { content: infoContent });
+      {
+        content: infoContent,
+        maxWidth: 200
+      });
     marker.addListener("click", function() {
       infoWindow.open(map, marker);
       });
