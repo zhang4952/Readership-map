@@ -24,6 +24,7 @@ var dataStack, displayStack;
 var map;
 var markers = [];
 var infoWindows = [];
+var openWindow = null;
 
 
 // Start the application
@@ -237,8 +238,17 @@ function markOnMap(datum) {
         content: infoContent,
         maxWidth: 200
       });
+    infoWindow.addListener("closeclick", function() {
+        if (openWindow == infoWindow) {
+          openWindow = null;
+        }
+      });
     marker.addListener("click", function() {
-      infoWindow.open(map, marker);
+        if (openWindow && openWindow != infoWindow) {
+          openWindow.close();
+        }
+        infoWindow.open(map, marker);
+        openWindow = infoWindow;
       });
     marker.setMap(map);
 
@@ -359,6 +369,7 @@ function clearMap() {
     infoWindows[i].close();
   }
   infoWindows = [];
+  openWindow = null;
 }
 
 
