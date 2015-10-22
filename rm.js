@@ -33,12 +33,16 @@ function start() {
   clearMap();
   dataStack = [];
   displayStack = [];
-  dataStartTime = new Date();
-  dataStartTime.setMinutes(dataStartTime.getMinutes() -
-                           queryDelay -
-                           queryInterval);
-  dataEndTime = new Date(dataStartTime);
-  virtualTime = new Date(dataStartTime);
+  if (SIMULATE_DATA) {
+    dataStartTime = new Date(2015, 9, 14, 11, 0, 0, 0);
+  } else {
+    dataStartTime = new Date();
+    dataStartTime.setMinutes(dataStartTime.getMinutes() -
+                             queryDelay -
+                             queryInterval);
+  }
+  dataEndTime = new Date(dataStartTime.getTime());
+  virtualTime = new Date(dataStartTime.getTime());
   lastDisplayTime = new Date();
   queryTimer = setInterval(query, MS_PER_MINUTE * queryInterval);
   displayTimer = setInterval(display, MS_PER_MINUTE * displayInterval);
@@ -74,8 +78,13 @@ function query() {
   console.log("querying...");
 
   dataStartTime = dataEndTime;
-  dataEndTime = new Date();
-  dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
+  if (SIMULATE_DATA) {
+    dataEndTime = new Date(dataStartTime.getTime());
+    dataEndTime.setMinutes(dataEndTime.getMinutes() + queryInterval);
+  } else {
+    dataEndTime = new Date();
+    dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
+  }
   if (SIMULATE_DATA) {
     console.log("(using simulated data)");
     $.get("data.json", function(data) {
@@ -111,14 +120,15 @@ function handleQueryResponse(response) {
     // Extract data in the desired time interval
     var responseRows = response.result.rows;
     for (var i = 0; i < responseRows.length; i++) {
-      if (rowInDataInterval(responseRows[i])) {
+      if (rowIsValid(responseRows[i]) &&
+          rowInDataInterval(responseRows[i])) {
         dataStack.push([timeFromRow(responseRows[i]),
                         dataFromRow(responseRows[i])]);
       }
     }
 
     // Update times
-    virtualTime = new Date(dataStartTime);
+    virtualTime = new Date(dataStartTime.getTime());
     lastDisplayTime = new Date();
 
     logState();
@@ -136,6 +146,9 @@ function handleQueryResponse(response) {
     } else {
       console.log("Data query returned zero rows");
     }
+    clearInterval(queryTimer);
+    clearInterval(displayTimer);
+    clearInterval(displayOneTimer);
     clearMap();
   }
 }
@@ -222,6 +235,16 @@ function markOnMap(datum) {
 }
 
 
+// Does the data row have valid values?
+function rowIsValid(row) {
+  if (row[4] == "(not set)") {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+
 // Is the data row in the desired time interval?
 function rowInDataInterval(row) {
   var time = timeFromRow(row);
@@ -236,7 +259,7 @@ function timeFromRow(row) {
     var minute = parseInt(row[1]);
     
     // Base the time off the start of our data interval
-    var time = new Date(dataStartTime);
+    var time = new Date(dataStartTime.getTime());
     time.setHours(hour);
     time.setMinutes(minute);
 
