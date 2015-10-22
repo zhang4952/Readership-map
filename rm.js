@@ -225,14 +225,14 @@ function markOnMap(datum) {
       };
     var marker = new google.maps.Marker(params);
     var infoContent =
-      "<strong>An Essay towards solving " +
-      "a Problem in the Doctrine of Chances</strong>" +
-      "<br><em>Thomas Bayes (1763)</em>" +
+      "<strong>Large Predators Limit Herbivore Densities " +
+      "in Northern Forest Ecosystems</strong>" +
+      "<br><em>Ripple, William J.; Beschta, Robert L. (2012)</em>" +
       "<hr>Reader in " + datum[1].city;
     var infoWindow = new google.maps.InfoWindow(
       {
         content: infoContent,
-        maxWidth: 200
+        maxWidth: 250
       });
     infoWindow.addListener("closeclick", function() {
         if (openWindow == infoWindow) {
