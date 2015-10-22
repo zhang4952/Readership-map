@@ -148,10 +148,6 @@ function handleQueryResponse(response) {
     } else {
       console.log("Data query returned zero rows");
     }
-    clearInterval(queryTimer);
-    clearInterval(displayTimer);
-    clearInterval(displayOneTimer);
-    clearMap();
   }
 }
 
@@ -555,7 +551,7 @@ function showProfiles(results) {
 
 // Selected profile has changed
 function handleProfileChange() {
-  $("#start-button").hide();
+  $("#start-button").show();
 }
 
 
