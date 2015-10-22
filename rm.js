@@ -338,7 +338,8 @@ function logStackRow(stack, i) {
 function initMap() {
   var params = {
     center: {lat: 20, lng: 0},
-    zoom: 2
+    zoom: 2,
+    minZoom: 2
   };
   map = new google.maps.Map(document.getElementById("map"), params);
 }
