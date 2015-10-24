@@ -129,10 +129,8 @@ function handleQueryResponse(response) {
     // Extract data in the desired time interval
     var responseRows = response.result.rows;
     for (var i = 0; i < responseRows.length; i++) {
-      if (rowIsValid(responseRows[i]) &&
-          rowInDataInterval(responseRows[i])) {
-        dataStack.push([timeFromRow(responseRows[i]),
-                        dataFromRow(responseRows[i])]);
+      if (rowToBeDisplayed(responseRows[i])) {
+        dataStack.push(dataFromRow(responseRows[i]));
       }
     }
 
@@ -177,7 +175,7 @@ function display() {
   // so that the correct order is maintained
   var toDisplay = [];
   while (dataStack.length > 0 &&
-         dataStack[dataStack.length - 1][0] <= virtualTime) {
+         dataStack[dataStack.length - 1].time <= virtualTime) {
     toDisplay.push(dataStack.pop());
   }
   while (toDisplay.length > 0) {
@@ -220,13 +218,13 @@ function displayOne() {
 
 // Mark a datum on the map
 function markOnMap(datum) {
-  if (datum && datum.length == 2) {
+  if (datum) {
     var params = {
         position: {
-            lat: datum[1].lat,
-            lng: datum[1].lng
+            lat: datum.lat,
+            lng: datum.lng
           },
-        title: datum[1].city,
+        title: datum.city,
         icon: "marker.png",
         animation: google.maps.Animation.DROP
       };
@@ -235,7 +233,7 @@ function markOnMap(datum) {
       "<strong>Large Predators Limit Herbivore Densities " +
       "in Northern Forest Ecosystems</strong>" +
       "<br><em>Ripple, William J.; Beschta, Robert L. (2012)</em>" +
-      "<hr>Reader in " + datum[1].city;
+      "<hr>Reader in " + datum.city;
     var infoWindow = new google.maps.InfoWindow(
       {
         content: infoContent,
@@ -263,20 +261,16 @@ function markOnMap(datum) {
 }
 
 
-// Does the data row have valid values?
-function rowIsValid(row) {
+// Should the data row be displayed?
+function rowToBeDisplayed(row) {
   if (row[4] == "(not set)") {
     return false;
-  } else {
-    return true;
   }
-}
-
-
-// Is the data row in the desired time interval?
-function rowInDataInterval(row) {
   var time = timeFromRow(row);
-  return (time >= dataStartTime && time < dataEndTime);
+  if (time < dataStartTime || time >= dataEndTime) {
+    return false;
+  }
+  return true;
 }
 
 
@@ -302,6 +296,7 @@ function timeFromRow(row) {
 function dataFromRow(row) {
   if (row && row.length >= 5) {
     return {
+        time: timeFromRow(row),
         lat: parseFloat(row[2]),
         lng: parseFloat(row[3]),
         city: row[4]
@@ -345,8 +340,8 @@ function logStack(stack) {
 // Log one element of a stack
 function logStackRow(stack, i) {
   console.log("                 " + 
-              stack[i][0] + " - " +
-              stack[i][1].city);
+              stack[i].time + " - " +
+              stack[i].city);
 }
 
 
