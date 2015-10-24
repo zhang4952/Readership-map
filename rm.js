@@ -2,7 +2,7 @@
 
 //////// Main appication ////////
 
-var SIMULATE_DATA = true;
+var SIMULATE_DATA = false;
 
 // Timing variables (Date objects)
 var dataStartTime, dataEndTime;
@@ -50,6 +50,9 @@ function start() {
   displayTimer = setInterval(display, MS_PER_MINUTE * displayInterval);
   displayOneTimer = null;
 
+  $("#account-select").hide();
+  $("#property-select").hide();
+  $("#profile-select").hide();
   $("#start-button").hide();
   $("#stop-button").show();
 
@@ -68,6 +71,9 @@ function stop() {
   clearTimeout(displayTimer);
   clearTimeout(displayOneTimer);
 
+  $("#account-select").show();
+  $("#property-select").show();
+  $("#profile-select").show();
   $("#start-button").show();
   $("#stop-button").hide();
 
@@ -94,7 +100,7 @@ function query() {
       });
   } else {
     var params = {
-      "ids": "ga:" + selectedProfile(),
+      "ids": "ga:" + $("#profile-select").val(),
       "start-date": "today",
       "end-date": "today",
       "metrics": "ga:pageviews",
@@ -356,7 +362,7 @@ function initMap() {
 }
 
 
-// Clear all markers from the map
+// Clear all markers and info windows from the map
 function clearMap() {
   for (var i = 0; i < markers.length; i++) {
     markers[i].setMap(null);
@@ -389,8 +395,8 @@ function authorize(event) {
     $("#start-button").show();
   } else {
     // Use "immediate" to avoid authorization pop-up --
-    // should not use "immediate" when authorize() called
-    // because Authorize button was clicked
+    // should not use "immediate" when Authorize button
+    // clicked
     var useImmediate = event ? false : true;
     var authParams = {
       client_id: CLIENT_ID,
@@ -423,18 +429,16 @@ function getAccounts() {
 // Put user accounts into a select element
 // and get properties for the default selection
 function showAccounts(results) {
-  var accountSelect = document.getElementById("account-select");
-  clearSelect(accountSelect);
+  $("#account-select").find("option").remove();
   if (results && !results.error && results.items.length > 0) {
     var accounts = results.items;
     accounts.sort(compareNames);
     for (var i = 0; i < accounts.length; i++) {
-      var acctOption = document.createElement("option");
-      acctOption.value = accounts[i].id;
-      acctOption.text = accounts[i].name;
-      accountSelect.add(acctOption);
+      $("#account-select").append(
+        '<option value="' + accounts[i].id + '">' +
+        accounts[i].name + '</option>');
     }
-    accountSelect.hidden = false;
+    $("#account-select").show();
     handleAccountChange();
   } else {
     if (!results) {
@@ -444,7 +448,7 @@ function showAccounts(results) {
     } else if (results.items.length <= 0) {
       console.log("No accounts for this user");
     }
-    accountSelect.hidden = true;
+    $("#account-select").hide();
     $("#property-select").hide();
     $("#profile-select").hide();
     $("#start-button").hide();
@@ -455,7 +459,7 @@ function showAccounts(results) {
 
 // Account selection has changed
 function handleAccountChange() {
-  getProperties(selectedAccount());
+  getProperties($("#account-select").val());
 }
 
 
@@ -472,18 +476,16 @@ function getProperties(accountId) {
 // Put user properties into a select element and
 // get profiles for the default selection
 function showProperties(results) {
-  var propertySelect = document.getElementById("property-select");
-  clearSelect(propertySelect);
+  $("#property-select").find("option").remove();
   if (results && !results.error && results.items.length > 0) {
     var properties = results.items;
     properties.sort(compareNames);
     for (var i = 0; i < properties.length; i++) {
-      var propOption = document.createElement("option");
-      propOption.value = properties[i].id;
-      propOption.text = properties[i].name;
-      propertySelect.add(propOption);
+      $("#property-select").append(
+        '<option value="' + properties[i].id + '">' +
+        properties[i].name + '</option>');
     }
-    propertySelect.hidden = false;
+    $("#property-select").show();
     handlePropertyChange();
   }
   else {
@@ -494,7 +496,7 @@ function showProperties(results) {
     } else if (results.items.length <= 0) {
       console.log("No properties for this account");
     }
-    propertySelect.hidden = true;
+    $("#property-select").hide();
     $("#profile-select").hide();
     $("#start-button").hide();
     clearMap();
@@ -504,7 +506,7 @@ function showProperties(results) {
 
 // Selected property has changed
 function handlePropertyChange() {
-  getProfiles(selectedAccount(), selectedProperty());
+  getProfiles($("#account-select").val(), $("#property-select").val());
 }
 
 
@@ -522,18 +524,16 @@ function getProfiles(accountId, propertyId) {
 // Put user profiles in a select element and
 // un-hide the Start button
 function showProfiles(results) {
-  var profileSelect = document.getElementById("profile-select");
-  clearSelect(profileSelect);
+  $("#profile-select").find("option").remove();
   if (results && !results.error && results.items.length > 0) {
     var profiles = results.items;
     profiles.sort(compareNames);
     for (var i = 0; i < profiles.length; i++) {
-      var profOption = document.createElement("option");
-      profOption.value = profiles[i].id;
-      profOption.text = profiles[i].name;
-      profileSelect.add(profOption);
+      $("#profile-select").append(
+        '<option value="' + profiles[i].id + '">' +
+        profiles[i].name + '</option>');
     }
-    profileSelect.hidden = false;
+    $("#profile-select").show();
     handleProfileChange();
   } else {
     if (!results) {
@@ -543,7 +543,7 @@ function showProfiles(results) {
     } else if (results.items.length <= 0) {
       console.log("No profiles for this account");
     }
-    profileSelect.hidden = true;
+    $("#profile-select").hide();
     $("#start-button").hide();
     clearMap();
   }
@@ -553,35 +553,6 @@ function showProfiles(results) {
 // Selected profile has changed
 function handleProfileChange() {
   $("#start-button").show();
-}
-
-
-// Return the selected Analytics account
-function selectedAccount() {
-  var accountSelect = document.getElementById("account-select");
-  return accountSelect.options[accountSelect.selectedIndex].value;
-}  
-
-
-// Return the selected Analytics Property
-function selectedProperty() {
-  var propertySelect = document.getElementById("property-select");
-  return propertySelect.options[propertySelect.selectedIndex].value;
-}
-
-
-// Return the selected Analytics Profile
-function selectedProfile() {
-  var profileSelect = document.getElementById("profile-select");
-  return profileSelect.options[profileSelect.selectedIndex].value;
-}
-
-
-// Clear a select HTML element
-function clearSelect(select) {
-  while (select.options.length > 0) {
-    select.remove(0);
-  }
 }
 
 
