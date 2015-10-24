@@ -2,17 +2,16 @@
 
 //////// Main appication ////////
 
-var SIMULATE_DATA = false;
+var SIMULATE_DATA = true;
 
 // Timing variables (Date objects)
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
 
-// Timing parameters (minutes)
-var queryDelay = 10;
-var queryInterval = 10;
-var displayInterval = 1;
-var MS_PER_MINUTE = 60000;
+// Timing parameters
+var queryDelay = 600000;
+var queryInterval = 600000;
+var displayInterval = 60000;
 
 // Interval timers
 var queryTimer, displayTimer, displayOneTimer;
@@ -39,15 +38,15 @@ function start() {
     dataStartTime = new Date(2015, 9, 14, 11, 0, 0, 0);
   } else {
     dataStartTime = new Date();
-    dataStartTime.setMinutes(dataStartTime.getMinutes() -
-                             queryDelay -
-                             queryInterval);
+    dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
+                                  queryDelay -
+                                  queryInterval);
   }
   dataEndTime = new Date(dataStartTime.getTime());
   virtualTime = new Date(dataStartTime.getTime());
   lastDisplayTime = new Date();
-  queryTimer = setInterval(query, MS_PER_MINUTE * queryInterval);
-  displayTimer = setInterval(display, MS_PER_MINUTE * displayInterval);
+  queryTimer = setInterval(query, queryInterval);
+  displayTimer = setInterval(display, displayInterval);
   displayOneTimer = null;
 
   $("#account-select").hide();
@@ -88,10 +87,12 @@ function query() {
   dataStartTime = dataEndTime;
   if (SIMULATE_DATA) {
     dataEndTime = new Date(dataStartTime.getTime());
-    dataEndTime.setMinutes(dataEndTime.getMinutes() + queryInterval);
+    dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() +
+                                queryInterval);
   } else {
     dataEndTime = new Date();
-    dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay);
+    dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
+                                queryDelay);
   }
   if (SIMULATE_DATA) {
     console.log("(using simulated data)");
@@ -164,8 +165,8 @@ function display() {
 
   // Update virtual time
   var currentTime = new Date();
-  virtualTime.setMinutes(virtualTime.getMinutes() + Math.round(
-                         (currentTime - lastDisplayTime) / MS_PER_MINUTE));
+  virtualTime.setMilliseconds(virtualTime.getMilliseconds() +
+                              Math.round(currentTime - lastDisplayTime));
 
   // Flush the display stack
   while (displayStack.length > 0) {
@@ -188,7 +189,7 @@ function display() {
     // evenly over the display interval
     if (displayStack.length > 1) {
       displayOneTimer = setInterval(displayOne,
-        displayInterval * MS_PER_MINUTE / displayStack.length);
+        displayInterval / displayStack.length);
     }
     displayOne();
   }
@@ -254,7 +255,7 @@ function markOnMap(datum) {
       });
     marker.setMap(map);
 
-    // Store reference to marker so that it can
+    // Store reference to map objects so that they can
     // be removed later
     markers.push(marker);
     infoWindows.push(infoWindow);
