@@ -70,9 +70,11 @@ function stop() {
   clearTimeout(displayTimer);
   clearTimeout(displayOneTimer);
 
-  $("#account-select").show();
-  $("#property-select").show();
-  $("#profile-select").show();
+  if (!SIMULATE_DATA) {
+    $("#account-select").show();
+    $("#property-select").show();
+    $("#profile-select").show();
+  }
   $("#start-button").show();
   $("#stop-button").hide();
 
@@ -229,14 +231,15 @@ function markOnMap(datum) {
       };
     var marker = new google.maps.Marker(params);
     var infoContent = "<strong>" +
-      (datum.title ? datum.title : "(Untitled)") +
+      (datum.title ? datum.title : "(No title)") +
       "</strong><br>";
     infoContent += datum.author ? datum.author : "";
-    infoContent += datum.date ? "(" + datum.date + ")" : "";
+    infoContent += datum.date ? " (" + datum.date + ")" : "";
     infoContent += datum.city ? "<hr>Reader in " + datum.city : "";
     var infoWindow = new google.maps.InfoWindow(
       {
-        content: infoContent
+        content: infoContent,
+        maxWidth: 300
       });
     infoWindow.addListener("closeclick", function() {
         if (openWindow == infoWindow) {
