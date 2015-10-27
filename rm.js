@@ -224,20 +224,19 @@ function markOnMap(datum) {
             lat: datum.lat,
             lng: datum.lng
           },
-        title: datum.city,
         icon: "marker.png",
         animation: google.maps.Animation.DROP
       };
     var marker = new google.maps.Marker(params);
-    var infoContent =
-      "<strong>Large Predators Limit Herbivore Densities " +
-      "in Northern Forest Ecosystems</strong>" +
-      "<br><em>Ripple, William J.; Beschta, Robert L. (2012)</em>" +
-      "<hr>Reader in " + datum.city;
+    var infoContent = "<strong>" +
+      (datum.title ? datum.title : "(Untitled)") +
+      "</strong><br>";
+    infoContent += datum.author ? datum.author : "";
+    infoContent += datum.date ? "(" + datum.date + ")" : "";
+    infoContent += datum.city ? "<hr>Reader in " + datum.city : "";
     var infoWindow = new google.maps.InfoWindow(
       {
-        content: infoContent,
-        maxWidth: 250
+        content: infoContent
       });
     infoWindow.addListener("closeclick", function() {
         if (openWindow == infoWindow) {
@@ -295,12 +294,18 @@ function timeFromRow(row) {
 // Return map object containing the row's data
 function dataFromRow(row) {
   if (row && row.length >= 5) {
-    return {
+    data = {
         time: timeFromRow(row),
         lat: parseFloat(row[2]),
         lng: parseFloat(row[3]),
         city: row[4]
       };
+    if (row.length >= 8) {
+      data.author = row[5];
+      data.title = row[6];
+      data.date = row[7];
+    }
+    return data;
   }
 }
 
