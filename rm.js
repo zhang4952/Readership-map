@@ -2,7 +2,7 @@
 
 //////// Main appication ////////
 
-var SIMULATE_DATA = true;
+var SIMULATE_DATA = false;
 
 // Timing variables (Date objects)
 var dataStartTime, dataEndTime;
@@ -230,11 +230,23 @@ function markOnMap(datum) {
         animation: google.maps.Animation.DROP
       };
     var marker = new google.maps.Marker(params);
-    var infoContent = "<strong>" +
-      (datum.title ? datum.title : "(No title)") +
-      "</strong><br>";
-    infoContent += datum.author ? datum.author : "";
-    infoContent += datum.date ? " (" + datum.date + ")" : "";
+    var infoContent = "";
+    if (datum.title) {
+      if (datum.uri) {
+        infoContent += "<a href=\"" + datum.uri + "\" " +
+        "style=\"color:black;text-decoration:none;font-weight:bold\" " +
+        "target=\"_blank\">";
+      }
+      infoContent += datum.title;
+      if (datum.uri) {
+        infoContent += "</a>";
+      }
+      infoContent += "<br>";
+    } else {
+      infoContent += "(No title)<br>";
+    }
+    infoContent += datum.author ? datum.author + " " : "";
+    infoContent += datum.date ? "(" + datum.date + ")" : "";
     infoContent += datum.city ? "<hr>Reader in " + datum.city : "";
     var infoWindow = new google.maps.InfoWindow(
       {
@@ -303,10 +315,11 @@ function dataFromRow(row) {
         lng: parseFloat(row[3]),
         city: row[4]
       };
-    if (row.length >= 8) {
+    if (row.length >= 9) {
       data.author = row[5];
       data.title = row[6];
       data.date = row[7];
+      data.uri = row[8];
     }
     return data;
   }
