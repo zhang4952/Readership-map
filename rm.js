@@ -2,13 +2,15 @@
 
 //////// Main appication ////////
 
-var SIMULATE_DATA = false;
+// Use simulated or live data?
+// (stores last selected mode)
+var mode = null;
 
 // Timing variables (Date objects)
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
 
-// Timing parameters
+// Timing parameters (ms)
 var queryDelay = 600000;
 var queryInterval = 600000;
 var displayInterval = 60000;
@@ -26,6 +28,13 @@ var infoWindows = [];
 var openWindow = null;
 
 
+// Initialize
+$(function() {
+  $("select").hide();
+  $("button").hide();
+});
+
+
 // Start the application
 function start() {
   console.log("starting...");
@@ -34,7 +43,7 @@ function start() {
   clearMap();
   dataStack = [];
   displayStack = [];
-  if (SIMULATE_DATA) {
+  if (mode == "simulated") {
     dataStartTime = new Date(2015, 9, 14, 11, 0, 0, 0);
   } else {
     dataStartTime = new Date();
@@ -49,9 +58,7 @@ function start() {
   displayTimer = setInterval(display, displayInterval);
   displayOneTimer = null;
 
-  $("#account-select").hide();
-  $("#property-select").hide();
-  $("#profile-select").hide();
+  $("select").hide();
   $("#start-button").hide();
   $("#stop-button").show();
 
@@ -70,11 +77,12 @@ function stop() {
   clearTimeout(displayTimer);
   clearTimeout(displayOneTimer);
 
-  if (!SIMULATE_DATA) {
+  if (mode == "live") {
     $("#account-select").show();
     $("#property-select").show();
     $("#profile-select").show();
   }
+  $("#mode-select").show();
   $("#start-button").show();
   $("#stop-button").hide();
 
@@ -87,7 +95,7 @@ function query() {
   console.log("querying...");
 
   dataStartTime = dataEndTime;
-  if (SIMULATE_DATA) {
+  if (mode == "simulated") {
     dataEndTime = new Date(dataStartTime.getTime());
     dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() +
                                 queryInterval);
@@ -96,7 +104,7 @@ function query() {
     dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                                 queryDelay);
   }
-  if (SIMULATE_DATA) {
+  if (mode == "simulated") {
     console.log("(using simulated data)");
     $.get("data.json", function(data) {
       handleQueryResponse(JSON.parse(data));
@@ -401,27 +409,35 @@ var CLIENT_ID = "898001239502-trev8m96god6nlsiherb9q8g0qj5ktcj.apps.googleuserco
 var SCOPES = "https://www.googleapis.com/auth/analytics.readonly";
 
 
-// Called as soon as Google API Client Library loads
-function authorize(event) {
-  if (SIMULATE_DATA) {
-    $("#auth-button").hide();
-    $("#account-select").hide();
-    $("#property-select").hide();
-    $("#profile-select").hide();
-    $("#stop-button").hide();
-    $("#start-button").show();
-  } else {
-    // Use "immediate" to avoid authorization pop-up --
-    // should not use "immediate" when Authorize button
-    // clicked
-    var useImmediate = event ? false : true;
-    var authParams = {
-      client_id: CLIENT_ID,
-      immediate: useImmediate,
-      scope: SCOPES
-    };
-    gapi.auth.authorize(authParams, handleAuthorization);
+function clientReady() {
+  $("#mode-select").show();
+  $("#mode-select").val("simulated");
+  handleModeChange();
+}
+
+
+function handleModeChange() {
+  if ($("#mode-select").val() != mode) {
+    mode = $("#mode-select").val();
+    $("select").not("#mode-select").hide();
+    $("button").hide();
+    if (mode == "simulated") {
+      $("#start-button").show();
+    } else {
+      authorize(true);
+    }
   }
+}
+
+
+// Call to authorize access to Google Analytics data
+function authorize(useImmediate) {
+  var authParams = {
+    client_id: CLIENT_ID,
+    immediate: useImmediate,
+    scope: SCOPES
+  };
+  gapi.auth.authorize(authParams, handleAuthorization);
 }
 
 
@@ -447,7 +463,8 @@ function getAccounts() {
 // and get properties for the default selection
 function showAccounts(results) {
   $("#account-select").find("option").remove();
-  if (results && !results.error && results.items.length > 0) {
+  if (results && !results.error &&
+      results.items && results.items.length > 0) {
     var accounts = results.items;
     accounts.sort(compareNames);
     for (var i = 0; i < accounts.length; i++) {
@@ -465,11 +482,6 @@ function showAccounts(results) {
     } else if (results.items.length <= 0) {
       console.log("No accounts for this user");
     }
-    $("#account-select").hide();
-    $("#property-select").hide();
-    $("#profile-select").hide();
-    $("#start-button").hide();
-    clearMap();
   }
 }
 
@@ -494,7 +506,8 @@ function getProperties(accountId) {
 // get profiles for the default selection
 function showProperties(results) {
   $("#property-select").find("option").remove();
-  if (results && !results.error && results.items.length > 0) {
+  if (results && !results.error &&
+      results.items && results.items.length > 0) {
     var properties = results.items;
     properties.sort(compareNames);
     for (var i = 0; i < properties.length; i++) {
@@ -513,10 +526,6 @@ function showProperties(results) {
     } else if (results.items.length <= 0) {
       console.log("No properties for this account");
     }
-    $("#property-select").hide();
-    $("#profile-select").hide();
-    $("#start-button").hide();
-    clearMap();
   }
 }
 
@@ -542,7 +551,8 @@ function getProfiles(accountId, propertyId) {
 // un-hide the Start button
 function showProfiles(results) {
   $("#profile-select").find("option").remove();
-  if (results && !results.error && results.items.length > 0) {
+  if (results && !results.error &&
+      results.items && results.items.length > 0) {
     var profiles = results.items;
     profiles.sort(compareNames);
     for (var i = 0; i < profiles.length; i++) {
@@ -560,9 +570,6 @@ function showProfiles(results) {
     } else if (results.items.length <= 0) {
       console.log("No profiles for this account");
     }
-    $("#profile-select").hide();
-    $("#start-button").hide();
-    clearMap();
   }
 }
 

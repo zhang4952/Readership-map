@@ -8,15 +8,19 @@
 
 <body>
   <div id="map" style="width: 900px; height: 600px"></div>
-  <button id="auth-button" onclick="authorize(event)" hidden>Authorize</button>
-  <select id="account-select" onchange="handleAccountChange()" hidden></select>
-  <select id="property-select" onchange="handlePropertyChange()" hidden></select>
-  <select id="profile-select" onchange="handleProfileChange()" hidden></select>
-  <button id="start-button" onclick="start()" hidden>Start</button>
-  <button id="stop-button" onclick="stop()" hidden>Stop</button>
+  <select id="mode-select" onchange="handleModeChange()">
+    <option value="simulated">Simulated</option>
+    <option value="live">Live</option>
+  </select>
+  <button id="auth-button" onclick="authorize(false)">Authorize</button>
+  <select id="account-select" onchange="handleAccountChange()"></select>
+  <select id="property-select" onchange="handlePropertyChange()"></select>
+  <select id="profile-select" onchange="handleProfileChange()"></select>
+  <button id="start-button" onclick="start()">Start</button>
+  <button id="stop-button" onclick="stop()">Stop</button>
 
   <script src="rm.js"></script>
-  <script src="https://apis.google.com/js/client.js?onload=authorize"></script>
+  <script src="https://apis.google.com/js/client.js?onload=clientReady"></script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=initMap"></script>
 </body>
 
