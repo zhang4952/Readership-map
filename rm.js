@@ -163,6 +163,7 @@ function handleQueryResponse(response) {
     } else {
       console.log("Data query returned zero rows");
     }
+    alert("Failed to get data");
   }
 }
 
@@ -482,6 +483,7 @@ function showAccounts(results) {
     } else if (results.items.length <= 0) {
       console.log("No accounts for this user");
     }
+    alert("Failed to get accounts");
   }
 }
 
@@ -526,6 +528,7 @@ function showProperties(results) {
     } else if (results.items.length <= 0) {
       console.log("No properties for this account");
     }
+    alert("Failed to get properties");
   }
 }
 
@@ -570,6 +573,7 @@ function showProfiles(results) {
     } else if (results.items.length <= 0) {
       console.log("No profiles for this account");
     }
+    alert("Failed to get profiles");
   }
 }
 
