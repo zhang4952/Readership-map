@@ -4,10 +4,14 @@
 <head>
   <title>Prototype | Readership Map</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body>
-  <div id="map" style="width: 900px; height: 600px"></div>
+<div id="container">
+  <h1>Readership Map</h1>
+  <div id="map" style="width: 600px; height: 400px"></div>
   <select id="mode-select" onchange="handleModeChange()">
     <option value="simulated">Simulated</option>
     <option value="live">Live</option>
@@ -18,10 +22,32 @@
   <select id="profile-select" onchange="handleProfileChange()"></select>
   <button id="start-button" onclick="start()">Start</button>
   <button id="stop-button" onclick="stop()">Stop</button>
+  <h2>Options</h2>
+  <h3>Simulated:</h3>
+  <ul>
+    <li>Draws data from <em>data.json</em>, which contains
+    Google Analytics data for the Scholars Archive account
+    from October 14, 2015.</li>
+    <li>The article title, author, etc., shown in the info
+    windows for each marker are not the actual articles
+    viewed/downloaded, but were matched randomly to the
+    Analytics data from a set of actual ETDs.</li>
+    <li>The simulation always starts at 11:00 AM
+    (a relatively high-traffic time).</li>
+  </ul>
+  <h3>Live:</h3>
+  <ul>
+    <li>Draws data from a Google Analytics account of the user
+    who authorizes access by signing into a Google account.</li>
+    <li>No article information will be shown.</li>
+    <li>The data are <q>real time</q> (with a delay of about
+    20 minutes).</li>
+  </ul>
+</div>
 
-  <script src="rm.js"></script>
-  <script src="https://apis.google.com/js/client.js?onload=clientReady"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=initMap"></script>
+<script src="rm.js"></script>
+<script src="https://apis.google.com/js/client.js?onload=clientReady"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=initMap"></script>
 </body>
 
 </html>
