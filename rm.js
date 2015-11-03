@@ -382,7 +382,70 @@ function initMap() {
     zoom: 2,
     minZoom: 2,
     mapTypeControl: false,
-    streetViewControl: false
+    streetViewControl: false,
+    styles: [
+      {
+        "featureType": "administrative",
+        "elementType": "geometry.fill",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "administrative",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "administrative.locality",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "on" }
+        ]
+      },
+      {
+        "featureType": "landscape",
+        "elementType": "geometry",
+        "stylers": [
+          { "color": "#808080" },
+          { "visibility": "on" }
+        ]
+      },
+      {
+        "featureType": "landscape",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "road",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "transit",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "water",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      }
+    ]
   };
   map = new google.maps.Map(document.getElementById("map"), params);
 }
