@@ -18,6 +18,12 @@ var displayInterval = 60000;
 // Interval timers
 var queryTimer, displayTimer, displayOneTimer;
 
+// Query parameters
+dimsKey = "ga:hour,ga:minute,ga:city,ga:pagePath";
+dimsAdd = "ga:country,ga:region,ga:latitude";
+dimsAdd2 = "ga:longitude,ga:pageTitle,ga:hostName";
+dimsSort = "-ga:hour,-ga:minute,-ga:city,-ga:pagePath";
+
 // Data and display stacks
 var dataStack, displayStack;
 
@@ -44,7 +50,7 @@ function start() {
   dataStack = [];
   displayStack = [];
   if (mode == "simulated") {
-    dataStartTime = new Date(2015, 9, 14, 11, 0, 0, 0);
+    dataStartTime = new Date(2015, 10, 18, 11, 0, 0, 0);
   } else {
     dataStartTime = new Date();
     dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
@@ -115,8 +121,8 @@ function query() {
       "start-date": "today",
       "end-date": "today",
       "metrics": "ga:pageviews",
-      "dimensions": "ga:hour,ga:minute,ga:latitude,ga:longitude,ga:city",
-      "sort": "-ga:hour,-ga:minute"
+      "dimensions": dimsKey + "," + dimsAdd,
+      "sort": dimsSort
     };
     var query = gapi.client.analytics.data.ga.get(params);
     query.execute(handleQueryResponse);
@@ -124,9 +130,69 @@ function query() {
 }
 
 
-// Callback for data query
+// Handle query response
 function handleQueryResponse(response) {
-  console.log("handling response...");
+  console.log("handling query response...");
+
+  if (response && !response.error && response.result &&
+      response.result.rows && response.result.rows.length > 0) {
+    // Log the full response
+    var formattedJson = JSON.stringify(response.result, null, 2);
+    console.log("first query response:");
+    console.log(formattedJson);
+    console.log("");
+
+    // Extract data in the desired time interval
+    var responseRows = response.result.rows;
+    partialData = []
+    for (var i = 0; i < responseRows.length; i++) {
+      if (rowShouldBeDisplayed(responseRows[i])) {
+        partialData.push(dataFromFirstRow(responseRows[i]));
+      }
+    }
+    query2();
+  } else {
+    if (!response) {
+      console.log("Data query response null");
+    } else if (response.error) {
+      console.log("Data query error: " + response.error.message);
+    } else if (!response.result) {
+      console.log("Data query response has no result field");
+    } else {
+      console.log("Data query returned zero rows");
+    }
+    alert("Failed to get data");
+  }
+}
+
+
+// Query for additional data
+function query2() {
+  console.log("querying for additional data...");
+
+  if (mode == "simulated") {
+    console.log("(using simulated data)");
+    $.get("data2.json", function(data) {
+      handleQuery2Response(JSON.parse(data));
+      });
+  } else {
+    var params = {
+      "ids": "ga:" + $("#profile-select").val(),
+      "start-date": "today",
+      "end-date": "today",
+      "metrics": "ga:pageviews",
+      "dimensions": dimsKey + "," + dimsAdd2,
+      "sort": dimsSort
+    };
+    var query = gapi.client.analytics.data.ga.get(params);
+    query.execute(handleQuery2Response);
+  }
+}
+
+
+// Callback for second data query
+function handleQuery2Response(response) {
+  console.log("handling additional data...");
 
   if (response && !response.error && response.result &&
       response.result.rows && response.result.rows.length > 0) {
@@ -138,10 +204,20 @@ function handleQueryResponse(response) {
 
     // Extract data in the desired time interval
     var responseRows = response.result.rows;
+    var tempData = []
     for (var i = 0; i < responseRows.length; i++) {
-      if (rowToBeDisplayed(responseRows[i])) {
-        dataStack.push(dataFromRow(responseRows[i]));
+      if (rowShouldBeDisplayed(responseRows[i])) {
+        tempData.push(dataFromSecondRow(responseRows[i]));
       }
+    }
+    while (partialData.length > tempData.length) {
+      partialData.shift();
+    }
+    while (tempData.length > partialData.length) {
+      tempData.shift();
+    }
+    for (var i = 0; i < partialData.length; i++) {
+      dataStack.push(mergeData(partialData[i], tempData[i]));
     }
 
     // Update times
@@ -242,7 +318,7 @@ function markOnMap(datum) {
     var infoContent = "";
     if (datum.title) {
       if (datum.uri) {
-        infoContent += "<a href=\"" + datum.uri + "\" " +
+        infoContent += "<a href=\"http://" + datum.uri + "\" " +
         "style=\"color:black;text-decoration:none;font-weight:bold\" " +
         "target=\"_blank\">";
       }
@@ -257,6 +333,8 @@ function markOnMap(datum) {
     infoContent += datum.author ? datum.author + " " : "";
     infoContent += datum.date ? "(" + datum.date + ")" : "";
     infoContent += datum.city ? "<hr>Reader in " + datum.city : "";
+    infoContent += datum.region ? ", " + datum.region : "";
+    infoContent += datum.country ? ", " + datum.country : "";
     var infoWindow = new google.maps.InfoWindow(
       {
         content: infoContent,
@@ -285,8 +363,8 @@ function markOnMap(datum) {
 
 
 // Should the data row be displayed?
-function rowToBeDisplayed(row) {
-  if (row[4] == "(not set)") {
+function rowShouldBeDisplayed(row) {
+  if (row[2] == "(not set)") {
     return false;
   }
   var time = timeFromRow(row);
@@ -315,23 +393,47 @@ function timeFromRow(row) {
 }
 
 
-// Return map object containing the row's data
-function dataFromRow(row) {
-  if (row && row.length >= 5) {
-    data = {
-        time: timeFromRow(row),
-        lat: parseFloat(row[2]),
-        lng: parseFloat(row[3]),
-        city: row[4]
-      };
-    if (row.length >= 9) {
-      data.author = row[5];
-      data.title = row[6];
-      data.date = row[7];
-      data.uri = row[8];
-    }
-    return data;
-  }
+// Return object containing data from a row from the first query
+function dataFromFirstRow(row) {
+  return {
+      time: timeFromRow(row),
+      city: row[2],
+      path: row[3],
+      country: row[4],
+      region: row[5],
+      lat: parseFloat(row[6]),
+      pageviews: parseInt(row[7])
+    };
+}
+
+
+// Return object containing data from a row from the second query
+function dataFromSecondRow(row) {
+  return {
+      time: timeFromRow(row),
+      city: row[2],
+      path: row[3],
+      lng: parseFloat(row[4]),
+      title: row[5],
+      uri: row[6] + row[3],
+      pageviews: parseInt(row[7])
+    };
+}
+
+
+// Merge two sets of partial data rows
+function mergeData(firstPart, secondPart) {
+  return {
+    time: firstPart.time,
+    country: firstPart.country,
+    region: firstPart.region,
+    city: firstPart.city,
+    lat: firstPart.lat,
+    lng: secondPart.lng,
+    title: secondPart.title,
+    uri: secondPart.uri,
+    pageviews: secondPart.pageviews
+  };
 }
 
 
