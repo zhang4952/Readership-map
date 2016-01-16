@@ -9,10 +9,11 @@ var map, markers, infoWindows, openWindow;
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
 
-/* Timing parameters (ms) */
-var queryDelay = 600000;
-var queryInterval = 600000;
-var displayInterval = 60000;
+/* Timing parameters */
+var QUERY_DELAY = 600000; /* milliseconds */
+var QUERY_INTERVAL = 600000;
+var DISPLAY_INTERVAL = 60000;
+var UTC_OFFSET_TO_DATA_TIME = -480; /* minutes */
 
 /* Interval timers */
 var queryTimer, displayTimer, displayOneTimer;
@@ -31,13 +32,13 @@ function start() {
   initMap();
   dataStartTime = new Date();
   dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
-                                queryDelay -
-                                queryInterval);
+                                QUERY_DELAY -
+                                QUERY_INTERVAL);
   dataEndTime = new Date(dataStartTime.getTime());
   virtualTime = new Date(dataStartTime.getTime());
   lastDisplayTime = new Date();
-  queryTimer = setInterval(query, queryInterval);
-  displayTimer = setInterval(display, displayInterval);
+  queryTimer = setInterval(query, QUERY_INTERVAL);
+  displayTimer = setInterval(display, DISPLAY_INTERVAL);
   displayOneTimer = null;
   dataStack = [];
   displayStack = [];
@@ -131,7 +132,7 @@ function query() {
   dataStartTime = dataEndTime;
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
-                              queryDelay);
+                              QUERY_DELAY);
   $.get("<%= Rails.application.routes.url_helpers.pageviews_path %>" + ".json",
     function(data) {
       handleQueryResponse(data);
@@ -205,7 +206,7 @@ function display() {
      * evenly over the display interval */
     if (displayStack.length > 1) {
       displayOneTimer = setInterval(displayOne,
-        displayInterval / displayStack.length);
+        DISPLAY_INTERVAL / displayStack.length);
     }
     displayOne();
   }
@@ -301,8 +302,15 @@ function readerFromRow(row) {
 
 function timeFromHourMinute(hour, minute) {
   var time = new Date(dataStartTime.getTime());
+  /* Adjust so that local datetime where the script is run
+     matches local time in the timezone of the data */
+  time.setMinutes(time.getMinutes() + time.getTimezoneOffset() +
+                                      UTC_OFFSET_TO_DATA_TIME);
   time.setHours(hour);
   time.setMinutes(minute);
+  /* Adjust back to local timezone */
+  time.setMinutes(time.getMinutes() - time.getTimezoneOffset()
+                                    - UTC_OFFSET_TO_DATA_TIME);
 
   return time;
 }
