@@ -1,0 +1,27 @@
+<h1>Pageviews</h1>
+<% if @result['error'] %>
+<p><%= @result['error'] %></p>
+<% elsif @result['rows'] %>
+<table>
+  <tr>
+    <th>Hour</th>
+    <th>Minute</th>
+    <th>Country</th>
+    <th>Region</th>
+    <th>City</th>
+    <th>Latitude</th>
+    <th>Longitude</th>
+    <th>Title</th>
+    <th>Host</th>
+    <th>Path</th>
+    <th>Pageviews</th>
+  </tr>
+  <% @result['rows'].each do |row| %>
+  <tr>
+    <% row.each do |value| %>
+    <td><%= value %></td>
+    <% end %>
+  </tr>
+  <% end %>
+</table>
+<% end %>

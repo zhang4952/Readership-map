@@ -1,0 +1,343 @@
+/* rm.js - Readership Map Prototype */
+
+var ReaderMap = (function() {
+
+/* Map variables */
+var map, markers, infoWindows, openWindow;
+
+/* Timing variables */
+var dataStartTime, dataEndTime;
+var virtualTime, lastDisplayTime;
+
+/* Timing parameters (ms) */
+var queryDelay = 600000;
+var queryInterval = 600000;
+var displayInterval = 60000;
+
+/* Interval timers */
+var queryTimer, displayTimer, displayOneTimer;
+
+/* Data and display stacks */
+var dataStack, displayStack;
+
+/* Call this when ready for map to go live */
+function start() {
+  console.log("Starting");
+  logState();
+
+  /* Initialize */
+  initMap();
+  dataStartTime = new Date();
+  dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
+                                queryDelay -
+                                queryInterval);
+  dataEndTime = new Date(dataStartTime.getTime());
+  virtualTime = new Date(dataStartTime.getTime());
+  lastDisplayTime = new Date();
+  queryTimer = setInterval(query, queryInterval);
+  displayTimer = setInterval(display, displayInterval);
+  displayOneTimer = null;
+  dataStack = [];
+  displayStack = [];
+
+  /* Make initial query */
+  query();
+}
+
+function initMap() {
+  console.log("Initializing map");
+
+  var params = {
+    center: {lat: 20, lng: 0},
+    zoom: 1,
+    minZoom: 1,
+    mapTypeControl: false,
+    streetViewControl: false,
+    styles: [
+      {
+        "featureType": "administrative",
+        "elementType": "geometry.fill",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "administrative",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "administrative.locality",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "on" }
+        ]
+      },
+      {
+        "featureType": "landscape",
+        "elementType": "geometry",
+        "stylers": [
+          { "color": "#808080" },
+          { "visibility": "on" }
+        ]
+      },
+      {
+        "featureType": "landscape",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "road",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "transit",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      },
+      {
+        "featureType": "water",
+        "elementType": "labels",
+        "stylers": [
+          { "visibility": "off" }
+        ]
+      }
+    ]
+  };
+  map = new google.maps.Map(document.getElementById("map"), params);
+  markers = []
+  infoWindows = []
+}
+
+function query() {
+  console.log("Querying");
+  logState();
+
+  dataStartTime = dataEndTime;
+  dataEndTime = new Date();
+  dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
+                              queryDelay);
+  $.get("<%= Rails.application.routes.url_helpers.pageviews_path %>" + ".json",
+    function(data) {
+      handleQueryResponse(data);
+    });
+}
+
+function handleQueryResponse(response) {
+  console.log("Handling query response");
+  logState();
+
+  if (!response) {
+    console.log("Data query response null");
+  } else if (response.error) {
+    console.log("Data query error: " + response.error.message);
+  } else if (!response.rows) {
+    console.log("Data query response has no rows member");
+  } else if (response.rows.length <= 0) {
+    console.log("Data query returned zero rows");
+  } else {
+
+    for (var i = 0; i < response.rows.length; i++) {
+      reader = readerFromRow(response.rows[i]);
+      if (readerShouldBeDisplayed(reader)) {
+        dataStack.push(reader);
+      }
+    }
+
+    virtualTime = new Date(dataStartTime.getTime());
+    lastDisplayTime = new Date();
+
+    display();
+  }
+}
+
+function display() {
+  console.log("Displaying");
+  logState();
+
+  var currentTime = new Date();
+  virtualTime.setMilliseconds(virtualTime.getMilliseconds() +
+                              Math.round(currentTime - lastDisplayTime));
+
+  /* Flush any leftover data */
+  while (displayStack.length > 0) {
+    displayOne();
+  }
+
+  /* Put data onto intermediate stack, then onto display stack,
+   * so that the correct order is maintained */
+  var toDisplay = [];
+  while (dataStack.length > 0 &&
+         dataStack[dataStack.length - 1].time <= virtualTime) {
+    toDisplay.push(dataStack.pop());
+  }
+  while (toDisplay.length > 0) {
+    displayStack.push(toDisplay.pop());
+  }
+
+  if (displayStack.length > 0) {
+    /* Set up to display multiple data separately, spaced
+     * evenly over the display interval */
+    if (displayStack.length > 1) {
+      displayOneTimer = setInterval(displayOne,
+        displayInterval / displayStack.length);
+    }
+    displayOne();
+  }
+
+  lastDisplayTime = currentTime;
+}
+
+/* Display a single reader */
+function displayOne() {
+  console.log("Displaying one");
+  logState();
+
+  if (displayStack.length > 0) {
+    markOnMap(displayStack.pop());
+  }
+
+  if (displayStack.length <= 0) {
+    clearTimeout(displayOneTimer);
+  }
+}
+
+/* Mark a reader on the map */
+function markOnMap(reader) {
+  var params = {
+      position: {
+          lat: reader.lat,
+          lng: reader.lng
+        },
+      icon: "<%= asset_path('marker.png') %>",
+      animation: google.maps.Animation.DROP
+    };
+  var marker = new google.maps.Marker(params);
+
+  var infoContent = "";
+  if (reader.title) {
+    if (reader.uri) {
+      infoContent += "<a href=\"http://" + reader.uri + "\" " +
+        "style=\"color:black;text-decoration:none;font-weight:bold\" " +
+        "target=\"_blank\">";
+    }
+    infoContent += reader.title;
+    if (reader.uri) {
+      infoContent += "</a>";
+    }
+    infoContent += "<br>";
+  } else {
+    infoContent += "(No title)<br>";
+  }
+  if (reader.city) {
+    infoContent += "<hr>Reader in " + reader.city;
+    infoContent += reader.region ? ", " + reader.region : "";
+    infoContent += reader.country ? ", " + reader.country : "";
+  }
+  
+  var infoWindow = new google.maps.InfoWindow({
+      content: infoContent,
+      maxWidth: 300
+    });
+  infoWindow.addListener("closeclick", function() {
+      if (openWindow == infoWindow) {
+        openWindow = null;
+      }
+    });
+  marker.addListener("click", function() {
+      if (openWindow && openWindow != infoWindow) {
+        openWindow.close();
+      }
+      infoWindow.open(map, marker);
+      openWindow = infoWindow;
+    });
+  marker.setMap(map);
+
+  /* Store references in case map needs to be cleared */
+  markers.push(marker);
+  infoWindows.push(infoWindow);
+}
+
+function readerFromRow(row) {
+  return {
+      time: timeFromHourMinute(parseInt(row[0]), parseInt(row[1])),
+      country: row[2] != "(not set)" ? row[2] : null,
+      region: row[3] != "(not set)" ? row[3] : null,
+      city: row[4] != "(not set)" ? row[4] : null,
+      lat: parseFloat(row[5]),
+      lng: parseFloat(row[6]),
+      title: row[7],
+      uri: row[8] + row[9],
+      count: parseInt(row[10])
+    };
+}
+
+function timeFromHourMinute(hour, minute) {
+  var time = new Date(dataStartTime.getTime());
+  time.setHours(hour);
+  time.setMinutes(minute);
+
+  return time;
+}
+
+function readerShouldBeDisplayed(reader) {
+  if (reader.time < dataStartTime || reader.time >= dataEndTime) {
+    return false;
+  }
+  return true;
+}
+
+function logState() {
+  console.log("  dataStartTime: " + dataStartTime);
+  console.log("    dataEndTime: " + dataEndTime);
+  console.log("    virtualTime: " + virtualTime);
+  console.log("lastDisplayTime: " + lastDisplayTime);
+  console.log("      dataStack: (bottom-to-top)");
+  logStack(dataStack);
+  console.log("   displayStack: (bottom-to-top)");
+  logStack(displayStack);
+  console.log("");
+}
+
+function logStack(stack) {
+  if (!stack) {
+    console.log("                 (null)");
+    return;
+  }
+  if (stack.length >= 1) {
+    logReader(stack, 0);
+  }
+  if (stack.length >= 2 && stack.length <= 4) {
+    for (i = 1; i < stack.length; i++) {
+      logReader(stack, i);
+    }
+  }
+  if (stack.length >= 5) {
+    console.log("                 ...");
+    logReader(stack, stack.length - 2);
+    logReader(stack, stack.length - 1);
+  }
+}
+
+function logReader(stack, i) {
+  console.log("                 " + 
+              stack[i].time + " - " +
+              stack[i].city);
+}
+
+return { start: start };
+
+})();
