@@ -22,8 +22,10 @@ var dataStack, displayStack;
 
 /* Call this when ready for map to go live */
 function start() {
+  <% unless Rails.env.production? %>
   console.log("Starting");
   logState();
+  <% end %>
 
   /* Initialize */
   initMap();
@@ -45,8 +47,6 @@ function start() {
 }
 
 function initMap() {
-  console.log("Initializing map");
-
   var params = {
     center: {lat: 20, lng: 0},
     zoom: 1,
@@ -123,8 +123,10 @@ function initMap() {
 }
 
 function query() {
+  <% unless Rails.env.production? %>
   console.log("Querying");
   logState();
+  <% end %>
 
   dataStartTime = dataEndTime;
   dataEndTime = new Date();
@@ -137,18 +139,13 @@ function query() {
 }
 
 function handleQueryResponse(response) {
+  <% unless Rails.env.production? %>
   console.log("Handling query response");
   logState();
+  <% end %>
 
-  if (!response) {
-    console.log("Data query response null");
-  } else if (response.error) {
-    console.log("Data query error: " + response.error.message);
-  } else if (!response.rows) {
-    console.log("Data query response has no rows member");
-  } else if (response.rows.length <= 0) {
-    console.log("Data query returned zero rows");
-  } else {
+  if (response && !response.error &&
+      response.rows && response.rows.length > 0) {
 
     for (var i = 0; i < response.rows.length; i++) {
       reader = readerFromRow(response.rows[i]);
@@ -162,11 +159,26 @@ function handleQueryResponse(response) {
 
     display();
   }
+  <% unless Rails.env.production? %>
+  else {
+    if (!response) {
+      console.log("Data query response null");
+    } else if (response.error) {
+      console.log("Data query error: " + response.error.message);
+    } else if (!response.rows) {
+      console.log("Data query response has no rows member");
+    } else if (response.rows.length <= 0) {
+      console.log("Data query returned zero rows");
+    }
+  }
+  <% end %>
 }
 
 function display() {
+  <% unless Rails.env.production? %>
   console.log("Displaying");
   logState();
+  <% end %>
 
   var currentTime = new Date();
   virtualTime.setMilliseconds(virtualTime.getMilliseconds() +
@@ -203,8 +215,10 @@ function display() {
 
 /* Display a single reader */
 function displayOne() {
+  <% unless Rails.env.production? %>
   console.log("Displaying one");
   logState();
+  <% end %>
 
   if (displayStack.length > 0) {
     markOnMap(displayStack.pop());
@@ -300,6 +314,8 @@ function readerShouldBeDisplayed(reader) {
   return true;
 }
 
+<% unless Rails.env.production? %>
+
 function logState() {
   console.log("  dataStartTime: " + dataStartTime);
   console.log("    dataEndTime: " + dataEndTime);
@@ -337,6 +353,8 @@ function logReader(stack, i) {
               stack[i].time + " - " +
               stack[i].city);
 }
+
+<% end %>
 
 return { start: start };
 
