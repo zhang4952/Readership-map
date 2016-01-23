@@ -288,31 +288,16 @@ function markOnMap(reader) {
 
 function readerFromRow(row) {
   return {
-      time: timeFromHourMinute(parseInt(row[0]), parseInt(row[1])),
-      country: row[2] != "(not set)" ? row[2] : null,
-      region: row[3] != "(not set)" ? row[3] : null,
-      city: row[4] != "(not set)" ? row[4] : null,
-      lat: parseFloat(row[5]),
-      lng: parseFloat(row[6]),
-      title: row[7],
-      uri: row[8],
-      count: parseInt(row[9])
+      time: new Date(Date.parse(row[0])),
+      country: row[1] != "(not set)" ? row[1] : null,
+      region: row[2] != "(not set)" ? row[2] : null,
+      city: row[3] != "(not set)" ? row[3] : null,
+      lat: parseFloat(row[4]),
+      lng: parseFloat(row[5]),
+      title: row[6],
+      uri: row[7],
+      count: parseInt(row[8])
     };
-}
-
-function timeFromHourMinute(hour, minute) {
-  var time = new Date(dataStartTime.getTime());
-  /* Adjust so that local datetime where the script is run
-     matches local time in the timezone of the data */
-  time.setMinutes(time.getMinutes() + time.getTimezoneOffset() +
-                                      UTC_OFFSET_TO_DATA_TIME);
-  time.setHours(hour);
-  time.setMinutes(minute);
-  /* Adjust back to local timezone */
-  time.setMinutes(time.getMinutes() - time.getTimezoneOffset()
-                                    - UTC_OFFSET_TO_DATA_TIME);
-
-  return time;
 }
 
 function readerShouldBeDisplayed(reader) {

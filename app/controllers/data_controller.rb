@@ -1,5 +1,5 @@
-require 'googleauth'
-require 'google/apis/analytics_v3'
+#require 'googleauth'
+#require 'google/apis/analytics_v3'
 
 class DataController < ApplicationController
   def pageviews
@@ -23,8 +23,7 @@ class DataController < ApplicationController
       end
       results = Pageview.order(time: :desc).first(100)
       results.map! do |pageview|
-        pageview = [pageview.time.localtime.hour,
-                    pageview.time.localtime.min,
+        pageview = [pageview.time.iso8601,
                     pageview.country,
                     pageview.region,
                     pageview.city,

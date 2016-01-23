@@ -4,8 +4,7 @@
 <% elsif @result['rows'] %>
 <table>
   <tr>
-    <th>Hour</th>
-    <th>Minute</th>
+    <th>Time</th>
     <th>Country</th>
     <th>Region</th>
     <th>City</th>
@@ -17,7 +16,8 @@
   </tr>
   <% @result['rows'].each do |row| %>
   <tr>
-    <% row.each do |value| %>
+    <td><%= Time.iso8601(row[0]).localtime %></td>
+    <% row[1..-1].each do |value| %>
     <td><%= value %></td>
     <% end %>
   </tr>
