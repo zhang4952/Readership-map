@@ -12,16 +12,6 @@ class DataController < ApplicationController
 
   private
 
-    # A maximum of 7 dimensions can be used in each query,
-    # so we query multiple times using a set of dimensions,
-    # e.g. (hour, minute, city, pagePath), as a 'key' that
-    # guarantees the query results can be merged by simply
-    # matching the rows from each set of results. 
-    #
-    # The non-key dimensions must not be more specific
-    # than the key, so that there are not multiple
-    # rows returned with the same key.
-
     # Get pageviews by time and location.
     def get_pageviews
       last_query = Timestamp.find_by(key: 'last_query')
@@ -48,7 +38,16 @@ class DataController < ApplicationController
     end
 
     def update_pageviews
-      #profile = 'ga:111738246' # Test Repository / All Website Data
+      # A maximum of 7 dimensions can be used in each query,
+      # so we query multiple times using a set of dimensions,
+      # e.g. (hour, minute, city, pagePath), as a 'key' that
+      # guarantees the query results can be merged by simply
+      # matching the rows from each set of results. 
+      #
+      # The non-key dimensions must not be more specific
+      # than the key, so that there are not multiple
+      # rows returned with the same key.
+
       #profile = 'ga:71605766'  # OSU Libraries / All Website Data
       profile = 'ga:71605283'  # OSU Libraries / Scholars Archive Production
       metrics = 'ga:pageviews'
