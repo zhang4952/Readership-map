@@ -36,3 +36,6 @@ bower.json
 
 # Ignore assets precompiled during deployment
 /public/assets
+
+# Ignore application configuration
+/config/application.yml

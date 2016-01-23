@@ -1,3 +1,5 @@
+require 'google/apis/analytics_v3'
+
 class DataController < ApplicationController
 
   def pageviews
@@ -47,16 +49,15 @@ class DataController < ApplicationController
       # than the key, so that there are not multiple
       # rows returned with the same key.
 
-      #profile = 'ga:71605766'  # OSU Libraries / All Website Data
-      profile = 'ga:71605283'  # OSU Libraries / Scholars Archive Production
+      profile = ENV['GA_PROFILE_ID']
       metrics = 'ga:pageviews'
       dims_key = 'ga:hour,ga:minute,ga:city,ga:pagePath'
       dims_1 = dims_key + ',ga:country,ga:region,ga:latitude'
       dims_2 = dims_key + ',ga:longitude,ga:pageTitle,ga:hostName'
-      # Filter out incomplete records, spam, etc.
+      # Filter out records with invalid location.
       filters = 'ga:city!=(not set)'
-      #filters += ';ga:hostName==ir.library.oregonstate.edu'
-      # Identical sorting is assumed when merging.
+      # Below, we assume the two sets of results are both
+      # sorted in descending time order.
       sort = '-ga:hour,-ga:minute,-ga:city,-ga:pagePath'
       rows_1 = query(profile, metrics, dims_1, filters, sort)
       rows_2 = query(profile, metrics, dims_2, filters, sort)
@@ -80,6 +81,7 @@ class DataController < ApplicationController
           now.day,
           rows_1[i][0],
           rows_1[i][1])
+        # This is a bad way to prevent duplicates in the database.
         if !last_pageview || time > last_pageview.time
           Pageview.create(
             time: time,
