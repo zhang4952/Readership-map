@@ -1,7 +1,5 @@
-#require 'googleauth'
-#require 'google/apis/analytics_v3'
-
 class DataController < ApplicationController
+
   def pageviews
     @result = get_pageviews
     respond_to do |format|
@@ -21,7 +19,9 @@ class DataController < ApplicationController
           return { 'error' => 'Error retrieving pageview data' }
         end
       end
-      results = Pageview.order(time: :desc).first(100)
+      results = Pageview.where(time: 1.hour.ago..Time.now)
+                        .order(time: :desc)
+                        .to_a
       results.map! do |pageview|
         pageview = [pageview.time.iso8601,
                     pageview.country,
