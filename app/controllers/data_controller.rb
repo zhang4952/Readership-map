@@ -16,8 +16,7 @@ class DataController < ApplicationController
     def get_pageviews
       last_query = Timestamp.find_by(key: 'last_query')
       if !last_query || Time.now - last_query.time > 10.minutes
-        success = update_pageviews
-        if !success
+        unless update_pageviews
           return { 'error' => 'Error retrieving pageview data' }
         end
       end
@@ -48,7 +47,6 @@ class DataController < ApplicationController
       # The non-key dimensions must not be more specific
       # than the key, so that there are not multiple
       # rows returned with the same key.
-
       profile = ENV['GA_PROFILE_ID']
       metrics = 'ga:pageviews'
       dims_key = 'ga:hour,ga:minute,ga:city,ga:pagePath'
@@ -59,8 +57,11 @@ class DataController < ApplicationController
       # Below, we assume the two sets of results are both
       # sorted in descending time order.
       sort = '-ga:hour,-ga:minute,-ga:city,-ga:pagePath'
-      rows_1 = query(profile, metrics, dims_1, filters, sort)
-      rows_2 = query(profile, metrics, dims_2, filters, sort)
+      # Set this so that the results definitely will
+      # go back far enough in time.
+      max = 600
+      rows_1 = query(profile, metrics, dims_1, filters, sort, max)
+      rows_2 = query(profile, metrics, dims_2, filters, sort, max)
       if rows_1.nil? || rows_2.nil?
         return false
       end
@@ -71,8 +72,7 @@ class DataController < ApplicationController
         rows_diff *= -1
         rows_2 = [rows_diff..-1]
       end
-      last_pageview = Pageview.order(:time).last
-      # Assumes local time zone is same as the data time zone
+      # Assumes local time zone is same as the data time zone.
       now = Time.now
       (0..rows_1.length-1).each do |i|
         time = Time.new(
@@ -81,31 +81,28 @@ class DataController < ApplicationController
           now.day,
           rows_1[i][0],
           rows_1[i][1])
-        # This is a bad way to prevent duplicates in the database.
-        if !last_pageview || time > last_pageview.time
-          Pageview.create(
-            time: time,
-            country: rows_1[i][4],
-            region: rows_1[i][5],
-            city: rows_1[i][2],
-            latitude: rows_1[i][6],
-            longitude: rows_2[i][4],
-            title: rows_2[i][5],
-            uri: rows_2[i][6] + rows_1[i][3],
-            count: rows_1[i][7])
-        else
-          break
-        end
+        pageview = Pageview.new(
+          time: time,
+          country: rows_1[i][4],
+          region: rows_1[i][5],
+          city: rows_1[i][2],
+          latitude: rows_1[i][6],
+          longitude: rows_2[i][4],
+          title: rows_2[i][5],
+          uri: rows_2[i][6] + rows_1[i][3],
+          count: rows_1[i][7])
+        # Many of these are expected to fail to save because
+        # the pageview is already in the database.
+        pageview.save
       end
-      last_query = Timestamp.find_by(key: 'last_query') ||
-                   Timestamp.new(key: 'last_query')
+      last_query = Timestamp.find_or_create_by(key: 'last_query')
       last_query.time = now
       last_query.save
       return true
     end
 
     # Query for Google Analytics data.
-    def query(profile, metrics, dimensions, filters, sort)
+    def query(profile, metrics, dimensions, filters, sort, max)
       service = Google::Apis::AnalyticsV3::AnalyticsService.new
       scopes = ['https://www.googleapis.com/auth/analytics.readonly']
       service.authorization = Google::Auth.get_application_default(scopes)
@@ -116,7 +113,8 @@ class DataController < ApplicationController
                           metrics,
                           dimensions: dimensions,
                           filters: filters,
-                          sort: sort) do |result, err|
+                          sort: sort,
+                          max_results: max) do |result, err|
         if err
           return nil
         elsif result.rows.nil?

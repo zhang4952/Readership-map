@@ -14,5 +14,6 @@ class CreatePageviews < ActiveRecord::Migration
       t.timestamps null: false
     end
     add_index :pageviews, :time
+    add_index :pageviews, [:time, :city, :uri], unique: true
   end
 end

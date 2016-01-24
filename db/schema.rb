@@ -27,6 +27,7 @@ ActiveRecord::Schema.define(version: 20160120030556) do
     t.datetime "updated_at", null: false
   end
 
+  add_index "pageviews", ["time", "city", "uri"], name: "index_pageviews_on_time_and_city_and_uri", unique: true
   add_index "pageviews", ["time"], name: "index_pageviews_on_time"
 
   create_table "timestamps", force: :cascade do |t|
