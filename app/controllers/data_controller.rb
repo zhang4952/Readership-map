@@ -31,7 +31,7 @@ class DataController < ApplicationController
                     pageview.latitude,
                     pageview.longitude,
                     pageview.title,
-                    pageview.uri,
+                    remove_query(pageview.uri),
                     pageview.count]
       end
       return { 'rows' => results }
@@ -74,7 +74,12 @@ class DataController < ApplicationController
       end
       # Assumes local time zone is same as the data time zone.
       now = Time.now
+      excluded_paths = ENV['EXCLUDED_PATHS'] ?
+        ENV['EXCLUDED_PATHS'].split(';') : []
       (0..rows_1.length-1).each do |i|
+        if excluded_paths.include?(remove_query(rows_1[i][3]))
+          next
+        end
         time = Time.new(
           now.year,
           now.month,
@@ -123,5 +128,18 @@ class DataController < ApplicationController
           return result.rows
         end
       end
+    end
+
+    # Remove query from URI path.
+    def remove_query(path)
+      query_start = path.index('?')
+      unless query_start.nil?
+        if query_start == 0
+          return ''
+        else
+          return path[0..query_start-1]
+        end
+      end
+      return path
     end
 end
