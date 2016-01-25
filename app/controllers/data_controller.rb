@@ -74,8 +74,8 @@ class DataController < ApplicationController
       end
       # Assumes local time zone is same as the data time zone.
       now = Time.now
-      excluded_paths = ENV['EXCLUDED_PATHS'] ?
-        ENV['EXCLUDED_PATHS'].split(';') : []
+      excluded_paths = ENV['EXCLUDED_PAGE_PATHS'] ?
+        ENV['EXCLUDED_PAGE_PATHS'].split(';') : []
       (0..rows_1.length-1).each do |i|
         if excluded_paths.include?(remove_query(rows_1[i][3]))
           next

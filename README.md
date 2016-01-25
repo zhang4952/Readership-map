@@ -17,6 +17,14 @@ GOOGLE_APPLICATION_CREDENTIALS: '/path/to/json'
 GA_PROFILE_ID: 'ga:XXXXXXXX'
 ```
 
+There is one optional configuration variable, `EXCLUDED_PAGE_PATHS`,
+which can be set with a ';'-delimited list of Google Analytics
+`ga:pagePath` values to exclude from the results, i.e.
+
+```
+EXCLUDED_PAGE_PATHS: '/path/to/exclude/1;/path/to/exclude/2;/etc'
+```
+
 ## Usage
 
 * `/data/pageviews[.json]` returns pageview data for today
