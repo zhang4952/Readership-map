@@ -8,7 +8,7 @@ class Pageview < ActiveRecord::Base
       return nil
     end
     last_query = Timestamp.find_by(key: 'last_query')
-    if !last_query || Time.now - last_query.time > 10.minutes
+    if !last_query || Time.now - last_query.time > 5.minutes
       unless update_cache
         return nil
       end
