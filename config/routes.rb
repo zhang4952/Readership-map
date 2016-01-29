@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  get 'data/pageviews', as: 'pageviews'
+  get 'data/recent', as: 'recent_data'
   get 'map/main'
 
   # The priority is based upon order of creation: first created -> highest priority.

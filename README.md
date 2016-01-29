@@ -17,15 +17,16 @@ GOOGLE_APPLICATION_CREDENTIALS: '/path/to/json'
 GA_PROFILE_ID: 'ga:XXXXXXXX'
 ```
 
-There is one optional configuration variable, `EXCLUDED_PAGE_PATHS`,
-which can be set with a ';'-delimited list of Google Analytics
-`ga:pagePath` values to exclude from the results, i.e.
+There is one optional configuration variable, `EXCLUDED_URIS`,
+which can be set with a ';'-delimited list of regular expressions
+(see [Ruby documentation](http://ruby-doc.org/core-2.2.0/Regexp.html))
+to match the URIs to be excluded.
 
 ```
-EXCLUDED_PAGE_PATHS: '/path/to/exclude/1;/path/to/exclude/2;/etc'
+EXCLUDED_URIS: 'search;browse;stats'
 ```
 
 ## Usage
 
-* `/data/pageviews[.json]` returns pageview data for today
-* `/map/main` displays the map with live pageview data
+* `/data/recent[.json]` returns readership data for today
+* `/map/main` displays the map with live readership data

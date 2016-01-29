@@ -3,17 +3,17 @@ require 'google/apis/analytics_v3'
 class Pageview < ActiveRecord::Base
   validates :time, uniqueness: { scope: [:city, :uri] }
   
-  def self.by_minute(min)
-    unless min >= 0 && min <= 60
-      return nil
-    end
+  def self.recent(last)
     last_query = Timestamp.find_by(key: 'last_query')
     if !last_query || Time.now - last_query.time > 5.minutes
       unless update_cache
         return nil
       end
     end
-    Pageview.where(time: min.minutes.ago..Time.now)
+    if last > 60
+      last = 60
+    end
+    Pageview.where(time: last.minutes.ago..Time.now)
             .order(time: :desc)
             .to_a
   end
@@ -30,7 +30,6 @@ class Pageview < ActiveRecord::Base
       # The non-key dimensions must not be more specific
       # than the key, so that there are not multiple
       # rows returned with the same key.
-      profile = ENV['GA_PROFILE_ID']
       metrics = 'ga:pageviews'
       dims_key = 'ga:hour,ga:minute,ga:city,ga:pagePath'
       dims_1 = dims_key + ',ga:country,ga:region,ga:latitude'
@@ -43,8 +42,10 @@ class Pageview < ActiveRecord::Base
       # Set this so that the results definitely will
       # go back far enough in time.
       max = 600
-      rows_1 = query(profile, metrics, dims_1, filters, sort, max)
-      rows_2 = query(profile, metrics, dims_2, filters, sort, max)
+      rows_1 = query('today', 'today', metrics, dims_1,
+                     filters, sort, max)
+      rows_2 = query('today', 'today', metrics, dims_2,
+                     filters, sort, max)
       if rows_1.nil? || rows_2.nil?
         return false
       end
@@ -57,10 +58,9 @@ class Pageview < ActiveRecord::Base
       end
       # Assumes local time zone is same as the data time zone.
       now = Time.now
-      excluded_paths = ENV['EXCLUDED_PAGE_PATHS'] ?
-        ENV['EXCLUDED_PAGE_PATHS'].split(';') : []
       (0..rows_1.length-1).each do |i|
-        if excluded_paths.include?(remove_query(rows_1[i][3]))
+        uri = rows_2[i][6] + rows_1[i][3]
+        if uri_excluded?(uri)
           next
         end
         time = Time.new(
@@ -77,7 +77,7 @@ class Pageview < ActiveRecord::Base
           latitude: rows_1[i][6],
           longitude: rows_2[i][4],
           title: rows_2[i][5],
-          uri: rows_2[i][6] + rows_1[i][3],
+          uri: uri,
           count: rows_1[i][7])
         # Many of these are expected to fail to save because
         # the pageview is already in the database.
@@ -86,18 +86,31 @@ class Pageview < ActiveRecord::Base
       last_query = Timestamp.find_or_create_by(key: 'last_query')
       last_query.time = now
       last_query.save
-      return true
+      true
+    end
+
+    # Determine whether URI should be excluded.
+    def self.uri_excluded?(uri)
+      excluded_uris = ENV['EXCLUDED_URIS'] ?
+        ENV['EXCLUDED_URIS'].split(';') : []
+      excluded_uris.each do |pattern|
+        if /#{pattern}/ =~ uri
+          return true
+        end
+      end
+      false
     end
     
     # Query for Google Analytics data.
-    def self.query(profile, metrics, dimensions, filters, sort, max)
+    def self.query(start_date, end_date, metrics, dimensions,
+                   filters, sort, max)
       service = Google::Apis::AnalyticsV3::AnalyticsService.new
       scopes = ['https://www.googleapis.com/auth/analytics.readonly']
       service.authorization = Google::Auth.get_application_default(scopes)
       service.authorization.fetch_access_token!
-      service.get_ga_data(profile,
-                          'today',
-                          'today',
+      service.get_ga_data(ENV['GA_PROFILE_ID'],
+                          start_date,
+                          end_date,
                           metrics,
                           dimensions: dimensions,
                           filters: filters,
@@ -111,18 +124,5 @@ class Pageview < ActiveRecord::Base
           return result.rows
         end
       end
-    end
-    
-    # Remove query from URI path.
-    def self.remove_query(path)
-      query_start = path.index('?')
-      unless query_start.nil?
-        if query_start == 0
-          return ''
-        else
-          return path[0..query_start-1]
-        end
-      end
-      return path
     end
 end

@@ -132,7 +132,7 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                               QUERY_DELAY);
-  $.get("<%= Rails.application.routes.url_helpers.pageviews_path %>" + ".json",
+  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" + ".json",
     function(data) {
       handleQueryResponse(data);
     });
