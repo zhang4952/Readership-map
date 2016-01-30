@@ -47,9 +47,13 @@ function start() {
 }
 
 function initMap() {
+  var zoom = 1;
+  if ($("#map").width() >= 1000) {
+    zoom++;
+  }
   var params = {
-    center: {lat: 20, lng: 0},
-    zoom: 1,
+    center: { lat: 42, lng: 10 },
+    zoom: zoom,
     minZoom: 1,
     mapTypeControl: false,
     streetViewControl: false,
