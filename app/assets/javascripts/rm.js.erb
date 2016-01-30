@@ -136,7 +136,8 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                               QUERY_DELAY);
-  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" + ".json",
+  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
+    ".json?last=30",
     function(data) {
       handleQueryResponse(data);
     });
@@ -245,14 +246,19 @@ function markOnMap(reader) {
     };
   var marker = new google.maps.Marker(params);
 
-  var infoContent = "";
+  var infoContent = "<div class=\"map-info\">";
   if (reader.title) {
     if (reader.uri) {
-      infoContent += "<a href=\"http://" + reader.uri + "\" " +
-        "style=\"color:black;text-decoration:none;font-weight:bold\" " +
-        "target=\"_blank\">";
+      infoContent += "<a href=\"http://" + reader.uri + "\""
+        + " alt=\"" + reader.title + "\" target=\"_blank\">";
     }
-    infoContent += reader.title;
+    if (reader.title.length > 150) {
+      var i = reader.title.substring(0, 150).lastIndexOf(" ");
+      infoContent += reader.title.substring(0, i) + "&hellip;";
+    }
+    else {
+      infoContent += reader.title;
+    }
     if (reader.uri) {
       infoContent += "</a>";
     }
@@ -261,10 +267,17 @@ function markOnMap(reader) {
     infoContent += "(No title)<br>";
   }
   if (reader.city) {
-    infoContent += "<hr>Reader in " + reader.city;
-    infoContent += reader.region ? ", " + reader.region : "";
-    infoContent += reader.country ? ", " + reader.country : "";
+    infoContent += "<p>";
+    infoContent += reader.city;
+    if (reader.country == "United States") {
+      infoContent += reader.region ? ", " + reader.region : "";
+    }
+    else {
+      infoContent += reader.country ? ", " + reader.country : "";
+    }
+    infoContent += "</p>";
   }
+  infoContent += "</div>"
   
   var infoWindow = new google.maps.InfoWindow({
       content: infoContent,

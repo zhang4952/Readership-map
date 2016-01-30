@@ -16,10 +16,35 @@ html, body, div {
   margin-right: auto;
 }
 
+.map-info {
+  color: #C34500;
+  font-family: Gudea, sans-serif;
+  
+  a {
+    color: #000000;
+    text-decoration: none;
+  }
+  
+  p {
+    margin-top: 0.5em;
+    font-size: 0.8em;
+  }
+}
+
 @media only screen and (min-width: 1000px) {
   #map {
     width: 1000px;
     height: 700px;
     margin-top: 100px;
+  }
+  
+  .map-info {
+    a {
+      font-size: 1.2em;
+    }
+    
+    p {
+      font-size: 1em;
+    }
   }
 }
