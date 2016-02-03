@@ -9,42 +9,38 @@ html, body, div {
 }
 
 #map {
-  width: 500px;
+  width: 512px;
   height: 350px;
-  margin-top: 50px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 0 auto;
 }
 
-.map-info {
+#map-info {
+  width: 480px;
+  height: 50px;
+  margin: 0 auto 0 auto;
+  border: 1px solid #DDDDDD;
+  padding: 15px;
   color: #C34500;
   font-family: Gudea, sans-serif;
-  
-  a {
-    color: #000000;
-    text-decoration: none;
-  }
-  
-  p {
-    margin-top: 0.5em;
-    font-size: 0.8em;
-  }
-}
 
-@media only screen and (min-width: 1000px) {
-  #map {
-    width: 1000px;
-    height: 700px;
-    margin-top: 100px;
+  p.title {
+    margin: 0 0 10px 0;
+    padding: 0;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    a {
+      width: 470px;
+      color: #000000;
+      text-decoration: none;
+    }
   }
   
-  .map-info {
-    a {
-      font-size: 1.2em;
-    }
-    
-    p {
-      font-size: 1em;
-    }
+  p.location {
+    margin: 10px 0 0 0;
+    padding: 0;
+    font-size: 12px;
   }
 }
