@@ -3,7 +3,7 @@
 var ReaderMap = (function() {
 
 /* Map variables */
-var map, markers, markerSelected;
+var map, markers, markerSelected, baseInfoHtml;
 
 /* Timing variables */
 var dataStartTime, dataEndTime;
@@ -122,6 +122,7 @@ function initMap() {
   map = new google.maps.Map(document.getElementById("map"), params);
   markers = [];
   markerSelected = null;
+  baseInfoHtml = $("#map-info").html();
 }
 
 function query() {
@@ -250,12 +251,17 @@ function markOnMap(reader) {
   var marker = new google.maps.Marker(params);
 
   marker.addListener("click", function() {
-      $("#map-info").html(readerInfoHtml(marker));
-      if (markerSelected) {
-        markerSelected.setIcon("<%= asset_path('marker.png') %>");
+      if (marker != markerSelected) {
+        if (markerSelected) {
+          markerSelected.setIcon("<%= asset_path('marker.png') %>");
+        }
+        $("#map-info").html(readerInfoHtml(marker));
+        marker.setIcon("<%= asset_path('marker-selected.png') %>");
+        markerSelected = marker;
+      } else {
+        $("#map-info").html(baseInfoHtml);
+        markerSelected = null;
       }
-      marker.setIcon("<%= asset_path('marker-selected.png') %>");
-      markerSelected = marker;
     });
   marker.addListener("mouseover", function() {
       $("#map-info").html(readerInfoHtml(marker));
@@ -265,7 +271,7 @@ function markOnMap(reader) {
       if (markerSelected) {
         $("#map-info").html(readerInfoHtml(markerSelected));
       } else {
-        $("#map-info").html("");
+        $("#map-info").html(baseInfoHtml);
       } 
       if (marker != markerSelected) {
         marker.setIcon("<%= asset_path('marker.png') %>");
@@ -278,18 +284,13 @@ function markOnMap(reader) {
 }
 
 function readerInfoHtml(marker) {
-  var infoHtml = "<p class=\"title\">";
+  var infoHtml = "<span class=\"title\">";
   if (marker.rm_title) {
     if (marker.rm_uri) {
       infoHtml += "<a href=\"http://" + marker.rm_uri + "\""
         + " alt=\"" + marker.rm_title + "\" target=\"_blank\">";
     }
-    if (marker.rm_title.length > 128) {
-      var i = marker.rm_title.substring(0, 125).lastIndexOf(" ");
-      infoHtml += marker.rm_title.substring(0, i) + "&hellip;";
-    } else {
-      infoHtml += marker.rm_title;
-    }
+    infoHtml += marker.rm_title;
     if (marker.rm_uri) {
       infoHtml += "</a>";
     }
@@ -303,9 +304,9 @@ function readerInfoHtml(marker) {
       infoHtml += "</a>";
     }
   }
-  infoHtml += "</p>";
+  infoHtml += "</span>";
   if (marker.rm_city) {
-    infoHtml += "<p class=\"location\">";
+    infoHtml += "<span class=\"location\">";
     infoHtml += marker.rm_city;
     if (marker.rm_country == "United States") {
       infoHtml += marker.rm_region ? ", " + marker.rm_region : "";
@@ -313,7 +314,7 @@ function readerInfoHtml(marker) {
     else {
       infoHtml += marker.rm_country ? ", " + marker.rm_country : "";
     }
-    infoHtml += "</p>";
+    infoHtml += "</span>";
   }
   return infoHtml;
 }
