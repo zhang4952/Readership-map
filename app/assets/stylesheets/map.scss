@@ -20,14 +20,15 @@ html, body, div {
   margin: 0 auto 0 auto;
   border: 1px solid #DDDDDD;
   padding: 15px;
-  color: #C34500;
+  color: #555555;
   font-family: Gudea, sans-serif;
+  text-align: center;
 
   h1 {
     margin: 0;
     padding: 0;
-    font-size: 32px;
-    text-align: center;
+    font-size: 34px;
+    color: #DDDDDD;
   }
   
   span.title {
@@ -41,7 +42,7 @@ html, body, div {
 
     a {
       width: 470px;
-      color: #000000;
+      color: #C34500;
       text-decoration: none;
     }
   }

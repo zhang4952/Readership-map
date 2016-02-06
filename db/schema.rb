@@ -15,19 +15,21 @@ ActiveRecord::Schema.define(version: 20160120030556) do
 
   create_table "pageviews", force: :cascade do |t|
     t.datetime "time"
-    t.string   "country"
-    t.string   "region"
+    t.string   "host"
+    t.string   "path"
     t.string   "city"
+    t.string   "region"
+    t.string   "country"
     t.float    "latitude"
     t.float    "longitude"
     t.string   "title"
-    t.string   "uri"
+    t.string   "language"
     t.integer  "count"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  add_index "pageviews", ["time", "city", "uri"], name: "index_pageviews_on_time_and_city_and_uri", unique: true
+  add_index "pageviews", ["time", "host", "path", "city"], name: "index_pageviews_on_time_and_host_and_path_and_city", unique: true
   add_index "pageviews", ["time"], name: "index_pageviews_on_time"
 
   create_table "timestamps", force: :cascade do |t|

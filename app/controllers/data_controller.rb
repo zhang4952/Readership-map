@@ -17,18 +17,34 @@ class DataController < ApplicationController
       unless pageviews
         return { 'error' => 'There was an error' }
       end
-      pageviews.map! do |pageview|
-        pageview = [pageview.time.iso8601,
-                    pageview.country,
-                    pageview.region,
-                    pageview.city,
-                    pageview.latitude,
-                    pageview.longitude,
-                    pageview.title,
-                    remove_query(pageview.uri),
-                    pageview.count]
+      rows = []
+      pageviews.each do |pageview|
+        uri = pageview.host + remove_query(pageview.path)
+        unless uri_excluded?(uri)
+          rows.push([pageview.time.iso8601,
+                     pageview.country,
+                     pageview.region,
+                     pageview.city,
+                     pageview.latitude,
+                     pageview.longitude,
+                     pageview.title,
+                     uri,
+                     pageview.count])
+        end
       end
-      { 'rows' => pageviews }
+      { 'rows' => rows }
+    end
+
+    # Determine whether URI should be excluded.
+    def uri_excluded?(uri)
+      excluded_uris = ENV['EXCLUDED_URIS'] ?
+        ENV['EXCLUDED_URIS'].split(';') : []
+      excluded_uris.each do |pattern|
+        if /#{pattern}/ =~ uri
+          return true
+        end
+      end
+      false
     end
 
     # Remove query from URI path.

@@ -1,7 +1,7 @@
 require 'google/apis/analytics_v3'
 
 class Pageview < ActiveRecord::Base
-  validates :time, uniqueness: { scope: [:city, :uri] }
+  validates :time, uniqueness: { scope: [:city, :host, :path] }
   
   def self.recent(last)
     last_query = Timestamp.find_by(key: 'last_query')
@@ -31,58 +31,64 @@ class Pageview < ActiveRecord::Base
       # than the key, so that there are not multiple
       # rows returned with the same key.
       metrics = 'ga:pageviews'
-      dims_key = 'ga:hour,ga:minute,ga:city,ga:pagePath'
-      dims_1 = dims_key + ',ga:country,ga:region,ga:latitude'
-      dims_2 = dims_key + ',ga:longitude,ga:pageTitle,ga:hostName'
-      # Filter out records with invalid location.
+      dims_key = 'ga:hour,ga:minute,ga:city,ga:hostName,ga:pagePath'
+      dims_1 = dims_key + ',ga:country,ga:region'
+      dims_2 = dims_key + ',ga:latitude,ga:longitude'
+      dims_3 = dims_key + ',ga:pageTitle,ga:language'
+
+      # Filter out records without location data.
       filters = 'ga:city!=(not set)'
-      # Below, we assume the two sets of results are both
-      # sorted in descending time order.
-      sort = '-ga:hour,-ga:minute,-ga:city,-ga:pagePath'
+
+      # Get most recent records.
+      sort = '-ga:hour,-ga:minute'
+
       # Set this so that the results definitely will
       # go back far enough in time.
-      max = 600
-      rows_1 = query('today', 'today', metrics, dims_1,
-                     filters, sort, max)
-      rows_2 = query('today', 'today', metrics, dims_2,
-                     filters, sort, max)
-      if rows_1.nil? || rows_2.nil?
+      max = 300
+
+      rows_1 = query('today', 'today', metrics, dims_1, filters, sort, max)
+      rows_2 = query('today', 'today', metrics, dims_2, filters, sort, max)
+      rows_3 = query('today', 'today', metrics, dims_3, filters, sort, max)
+      if rows_1.nil? || rows_2.nil? || rows_3.nil?
         return false
       end
-      rows_diff = rows_1.length - rows_2.length
-      if rows_diff > 0
-        rows_1 = rows_1[rows_diff..-1]
-      elsif rows_diff < 0
-        rows_diff *= -1
-        rows_2 = [rows_diff..-1]
-      end
+
       # Assumes local time zone is same as the data time zone.
       now = Time.now
-      (0..rows_1.length-1).each do |i|
-        uri = rows_2[i][6] + rows_1[i][3]
-        if uri_excluded?(uri)
-          next
-        end
-        time = Time.new(
-          now.year,
-          now.month,
-          now.day,
-          rows_1[i][0],
-          rows_1[i][1])
-        pageview = new(
-          time: time,
-          country: rows_1[i][4],
-          region: rows_1[i][5],
-          city: rows_1[i][2],
-          latitude: rows_1[i][6],
-          longitude: rows_2[i][4],
-          title: rows_2[i][5],
-          uri: uri,
-          count: rows_1[i][7])
-        # Many of these are expected to fail to save because
-        # the pageview is already in the database.
+
+      rows_1.each do |row|
+        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        pageview = new(time: time, city: row[2], host: row[3], path: row[4],
+                       country: row[5], region: row[6], count: row[7])
         pageview.save
       end
+
+      rows_2.each do |row|
+        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        existing = find_by(time: time, city: row[2],
+                           host: row[3], path: row[4])
+        if existing
+          existing.latitude = row[5]
+          existing.longitude = row[6]
+          existing.save
+        end
+      end
+
+      rows_3.each do |row|
+        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        existing = find_by(time: time, city: row[2],
+                           host: row[3], path: row[4])
+        if existing
+          existing.title = row[5]
+          existing.language = row[6]
+          existing.save
+        end
+      end
+
+      # Drop incomplete records.
+      where(latitude: nil).destroy_all
+      where(title: nil).destroy_all
+
       last_query = Timestamp.find_or_create_by(key: 'last_query')
       last_query.time = now
       last_query.save
