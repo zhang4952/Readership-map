@@ -95,18 +95,6 @@ class Pageview < ActiveRecord::Base
       true
     end
 
-    # Determine whether URI should be excluded.
-    def self.uri_excluded?(uri)
-      excluded_uris = ENV['EXCLUDED_URIS'] ?
-        ENV['EXCLUDED_URIS'].split(';') : []
-      excluded_uris.each do |pattern|
-        if /#{pattern}/ =~ uri
-          return true
-        end
-      end
-      false
-    end
-    
     # Query for Google Analytics data.
     def self.query(start_date, end_date, metrics, dimensions,
                    filters, sort, max)
