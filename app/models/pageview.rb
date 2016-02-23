@@ -118,6 +118,7 @@ class Pageview < ActiveRecord::Base
                           sort: sort,
                           max_results: max) do |result, err|
         if err
+          puts err
           return nil
         elsif result.rows.nil?
           return []
