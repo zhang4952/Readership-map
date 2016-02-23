@@ -99,8 +99,15 @@ class Pageview < ActiveRecord::Base
     def self.query(start_date, end_date, metrics, dimensions,
                    filters, sort, max)
       service = Google::Apis::AnalyticsV3::AnalyticsService.new
-      scopes = ['https://www.googleapis.com/auth/analytics.readonly']
-      service.authorization = Google::Auth.get_application_default(scopes)
+      service.authorization = Signet::OAuth2::Client.new(
+        {
+          issuer: ENV['GSA_CLIENT_EMAIL'],
+          scope: 'https://www.googleapis.com/auth/analytics.readonly',
+          token_credential_uri: 'https://www.googleapis.com/oauth2/v3/token',
+          audience: 'https://www.googleapis.com/oauth2/v3/token',
+          signing_key: OpenSSL::PKey::RSA.new(
+            ENV['GSA_PRIVATE_KEY'].gsub("\\n", "\n")),
+        })
       service.authorization.fetch_access_token!
       service.get_ga_data(ENV['GA_PROFILE_ID'],
                           start_date,
