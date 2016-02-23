@@ -5,6 +5,7 @@ gem 'googleauth', '0.4.2'
 gem 'google-api-client', '0.9.pre3'
 # Use Figaro for configuration
 gem 'figaro'
+# Use whenever for scheduling tasks
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.4'

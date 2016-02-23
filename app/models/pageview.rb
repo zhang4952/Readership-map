@@ -18,6 +18,10 @@ class Pageview < ActiveRecord::Base
             .to_a
   end
   
+  def self.clear_old
+    Pageview.where('time < ?', 1.day.ago).destroy_all
+  end
+  
   private
   
     def self.update_cache
