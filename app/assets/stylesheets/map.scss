@@ -15,11 +15,11 @@ html, body, div {
 }
 
 #map-info {
-  width: 480px;
+  width: 640px;
   height: 48px;
-  margin: 0 auto 0 auto;
+  margin: 48px auto 0 auto;
   border: 1px solid #DDDDDD;
-  padding: 15px;
+  padding: 12px;
   color: #555555;
   font-family: Gudea, sans-serif;
   text-align: center;
@@ -27,15 +27,15 @@ html, body, div {
   h1 {
     margin: 0;
     padding: 0;
-    font-size: 34px;
+    font-size: 36px;
     color: #DDDDDD;
   }
   
   span.title {
     display: block;
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     padding: 0;
-    font-size: 13px;
+    font-size: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -48,8 +48,8 @@ html, body, div {
   }
 
   span.location {
-    margin: 10px 0 0 0;
+    margin: 8px 0 0 0;
     padding: 0;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
