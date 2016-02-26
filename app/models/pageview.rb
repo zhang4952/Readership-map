@@ -57,18 +57,21 @@ class Pageview < ActiveRecord::Base
         return false
       end
 
-      # Assumes local time zone is same as the data time zone.
-      now = Time.now
+      # If GA_UTC_OFFSET is not set, treats time in the GA data
+      # as being in the local time where this app runs.
+      now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
 
       rows_1.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
+                        ENV['GA_UTC_OFFSET'])
         pageview = new(time: time, city: row[2], host: row[3], path: row[4],
                        country: row[5], region: row[6], count: row[7])
         pageview.save
       end
 
       rows_2.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
+                        ENV['GA_UTC_OFFSET'])
         existing = find_by(time: time, city: row[2],
                            host: row[3], path: row[4])
         if existing
@@ -79,7 +82,8 @@ class Pageview < ActiveRecord::Base
       end
 
       rows_3.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1])
+        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
+                        ENV['GA_UTC_OFFSET'])
         existing = find_by(time: time, city: row[2],
                            host: row[3], path: row[4])
         if existing
