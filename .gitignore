@@ -38,3 +38,7 @@ bower.json
 
 # Ignore application configuration
 /config/application.yml
+
+# Ignore spring
+/spring
+/spring-1000
