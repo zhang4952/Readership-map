@@ -19,6 +19,6 @@
 
 # Learn more: http://github.com/javan/whenever
 
-every :day do
+every :day, :at => '1:10pm' do
     runner 'Pageview.clear_old'
 end
