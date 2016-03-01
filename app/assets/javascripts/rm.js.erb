@@ -135,6 +135,7 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                               QUERY_DELAY);
+  $("#map-info").html("<h1>Loading&hellip;</h1>");
   $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
     ".json?last=30",
     function(data) {
@@ -148,6 +149,7 @@ function handleQueryResponse(response) {
   logState();
   <% end %>
 
+  $("#map-info").html(baseInfoHtml);
   if (response && !response.error &&
       response.rows && response.rows.length > 0) {
 
