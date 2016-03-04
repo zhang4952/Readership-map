@@ -1,10 +1,12 @@
 source 'https://rubygems.org'
 
+ruby '2.3.0'
+
 # Google APIs
 gem 'googleauth', '0.4.2'
 gem 'google-api-client', '0.9.pre3'
 # Use Figaro for configuration
-gem 'figaro'
+gem 'figaro', '1.1.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.4'
@@ -52,6 +54,6 @@ end
 
 group :production do
   # These are required for deployment to Heroku
-  gem 'pg'
-  gem 'rails_12factor'
+  gem 'pg', '0.18.4'
+  gem 'rails_12factor', '0.0.3'
 end
