@@ -3,8 +3,8 @@ source 'https://rubygems.org'
 ruby '2.3.0'
 
 # Google APIs
-gem 'googleauth', '0.4.2'
-gem 'google-api-client', '0.9.pre3'
+gem 'googleauth', '0.5.1'
+gem 'google-api-client', '0.9.3'
 # Use Figaro for configuration
 gem 'figaro', '1.1.1'
 
