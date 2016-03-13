@@ -8,20 +8,24 @@ html, body, div {
   margin: 0;
 }
 
+$map-width: 1024px;
+$map-width-to-height: 1024 / 700;
+$map-info-padding: 12px;
+$map-info-border: 1px;
+
 #map {
-  width: 512px;
-  height: 350px;
+  width: $map-width;
+  height: $map-width / $map-width-to-height;
   margin: 0 auto 0 auto;
-  border-left: 76px solid #FFFFFF;
-  border-right: 76px solid #FFFFFF;
+  border: 0;
 }
 
 #map-info {
-  width: 640px;
-  height: 48px;
+  width: $map-width - 2*$map-info-padding - 2*$map-info-border;
+  height: 64px;
   margin: 48px auto 0 auto;
-  border: 1px solid #DDDDDD;
-  padding: 12px;
+  border: $map-info-border solid #DDDDDD;
+  padding: $map-info-padding;
   color: #555555;
   font-family: Gudea, sans-serif;
   text-align: center;
@@ -29,7 +33,7 @@ html, body, div {
   h1 {
     margin: 0;
     padding: 0;
-    font-size: 36px;
+    font-size: 48px;
     color: #DDDDDD;
   }
   
@@ -37,7 +41,7 @@ html, body, div {
     display: block;
     margin: 0 0 8px 0;
     padding: 0;
-    font-size: 16px;
+    font-size: 24px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -52,6 +56,6 @@ html, body, div {
   span.location {
     margin: 8px 0 0 0;
     padding: 0;
-    font-size: 12px;
+    font-size: 16px;
   }
 }
