@@ -3,7 +3,7 @@
 var ReaderMap = (function() {
 
 /* Map variables */
-var map, markers, markerSelected, baseInfoHtml;
+var map, markers, markerSelected, baseInfoHtml, infoWindow;
 
 /* Timing variables */
 var dataStartTime, dataEndTime;
@@ -122,6 +122,7 @@ function initMap() {
   map = new google.maps.Map(document.getElementById("map"), params);
   markers = [];
   markerSelected = null;
+  infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
   baseInfoHtml = $("#map-info").html();
 }
 
@@ -259,36 +260,36 @@ function markOnMap(reader) {
         if (markerSelected) {
           markerSelected.setIcon("<%= asset_path('marker.png') %>");
         }
-        $("#map-info").html(readerInfoHtml(marker));
-        marker.setIcon("<%= asset_path('marker-selected.png') %>");
+        infoWindow.setContent(readerInfoHtml(marker));
+        google.maps.event.clearListeners(infoWindow, "closeclick");
+        infoWindow.addListener("closeclick",
+          function() {
+            marker.setIcon("<%= asset_path('marker.png') %>");
+            markerSelected = null;
+          });
+        infoWindow.open(map, marker);
+        marker.setIcon("<%= asset_path('marker-selected.png') %>"); 
         markerSelected = marker;
       } else {
-        $("#map-info").html(baseInfoHtml);
+        infoWindow.close();
+        marker.setIcon("<%= asset_path('marker.png') %>"); 
         markerSelected = null;
-      }
-    });
-  marker.addListener("mouseover", function() {
-      $("#map-info").html(readerInfoHtml(marker));
-      marker.setIcon("<%= asset_path('marker-selected.png') %>");
-    });
-  marker.addListener("mouseout", function() {
-      if (markerSelected) {
-        $("#map-info").html(readerInfoHtml(markerSelected));
-      } else {
-        $("#map-info").html(baseInfoHtml);
-      } 
-      if (marker != markerSelected) {
-        marker.setIcon("<%= asset_path('marker.png') %>");
       }
     });
   marker.setMap(map);
 
   /* Store references in case map needs to be cleared */
   markers.push(marker);
+
+  $("#map-info").html(readerInfoHtml(marker));
 }
 
 function readerInfoHtml(marker) {
-  var infoHtml = "<span class=\"title\">";
+  var infoHtml = "<style>";
+  infoHtml += "p.title { font-size: 16px; color: #C34500; }";
+  infoHtml += "p.title a { text-decoration: none; color: #C34500; }";
+  infoHtml += "</style>";
+  infoHtml += "<p class=\"title\">";
   if (marker.rm_title) {
     if (marker.rm_uri) {
       infoHtml += "<a href=\"http://" + marker.rm_uri + "\""
@@ -308,9 +309,9 @@ function readerInfoHtml(marker) {
       infoHtml += "</a>";
     }
   }
-  infoHtml += "</span>";
+  infoHtml += "</p>";
   if (marker.rm_city) {
-    infoHtml += "<span class=\"location\">";
+    infoHtml += "<p class=\"location\">";
     infoHtml += marker.rm_city;
     if (marker.rm_country == "United States") {
       infoHtml += marker.rm_region ? ", " + marker.rm_region : "";
@@ -318,7 +319,7 @@ function readerInfoHtml(marker) {
     else {
       infoHtml += marker.rm_country ? ", " + marker.rm_country : "";
     }
-    infoHtml += "</span>";
+    infoHtml += "</p>";
   }
   return infoHtml;
 }

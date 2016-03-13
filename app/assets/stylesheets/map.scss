@@ -37,8 +37,7 @@ $map-info-border: 1px;
     color: #DDDDDD;
   }
   
-  span.title {
-    display: block;
+  p.title {
     margin: 0 0 8px 0;
     padding: 0;
     font-size: 24px;
@@ -53,7 +52,7 @@ $map-info-border: 1px;
     }
   }
 
-  span.location {
+  p.location {
     margin: 8px 0 0 0;
     padding: 0;
     font-size: 16px;
