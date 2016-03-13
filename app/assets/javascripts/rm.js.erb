@@ -13,6 +13,7 @@ var virtualTime, lastDisplayTime;
 var QUERY_DELAY = 1200000; /* milliseconds */
 var QUERY_INTERVAL = 600000;
 var DISPLAY_INTERVAL = 60000;
+var MARKER_EXPIRATION = 1800000;
 
 /* Interval timers */
 var queryTimer, displayTimer, displayOneTimer;
@@ -280,6 +281,9 @@ function markOnMap(reader) {
 
   /* Store references in case map needs to be cleared */
   markers.push(marker);
+
+  /* Remove marker after MARKER_EXPIRATION milliseconds */
+  setTimeout(function() { marker.setMap(null) }, MARKER_EXPIRATION);
 
   $("#map-info").html(readerInfoHtml(marker));
 }
