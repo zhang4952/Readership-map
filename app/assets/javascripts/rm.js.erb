@@ -3,7 +3,7 @@
 var ReaderMap = (function() {
 
 /* Map variables */
-var map, markers, markerSelected, baseInfoHtml, infoWindow;
+var map, markers, markerSelected, infoWindow;
 
 /* Timing variables */
 var dataStartTime, dataEndTime;
@@ -124,7 +124,6 @@ function initMap() {
   markers = [];
   markerSelected = null;
   infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
-  baseInfoHtml = $("#map-info").html();
 }
 
 function query() {
@@ -137,11 +136,7 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                               QUERY_DELAY);
-  $("#map-info").html("<h1>Loading&hellip;</h1>");
-  var delayInMin = (QUERY_DELAY + QUERY_INTERVAL) / (1000 * 60);
-  delayInMin += 5 /* Padding to make sure early records aren't missed */
-  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
-      ".json?last=" + delayInMin,
+  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" + ".json",
     function(data) {
       handleQueryResponse(data);
     });
@@ -153,7 +148,6 @@ function handleQueryResponse(response) {
   logState();
   <% end %>
 
-  $("#map-info").html(baseInfoHtml);
   if (response && !response.error &&
       response.rows && response.rows.length > 0) {
 

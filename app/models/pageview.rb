@@ -3,17 +3,14 @@ require 'google/apis/analytics_v3'
 class Pageview < ActiveRecord::Base
   validates :time, uniqueness: { scope: [:city, :host, :path] }
   
-  def self.recent(last)
+  def self.recent
     last_query = Timestamp.find_by(key: 'last_query')
     if !last_query || Time.now - last_query.time > 5.minutes
       unless update_cache
         return nil
       end
     end
-    if last > 60
-      last = 60
-    end
-    Pageview.where(time: last.minutes.ago..Time.now)
+    Pageview.where(time: 60.minutes.ago..Time.now)
             .order(time: :desc)
             .to_a
   end
@@ -48,7 +45,7 @@ class Pageview < ActiveRecord::Base
 
       # Set this so that the results definitely will
       # go back far enough in time.
-      max = 300
+      max = 600
 
       rows_1 = query('today', 'today', metrics, dims_1, filters, sort, max)
       rows_2 = query('today', 'today', metrics, dims_2, filters, sort, max)
@@ -58,7 +55,7 @@ class Pageview < ActiveRecord::Base
       end
 
       # If GA_UTC_OFFSET is not set, treats time in the GA data
-      # as being in the local time where this app runs.
+      # as if it is in the local time where this app runs.
       now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
 
       rows_1.each do |row|
