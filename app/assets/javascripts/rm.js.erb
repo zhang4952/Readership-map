@@ -289,11 +289,7 @@ function markOnMap(reader) {
 }
 
 function readerInfoHtml(marker) {
-  var infoHtml = "<style>";
-  infoHtml += "p.title { font-size: 16px; color: #C34500; }";
-  infoHtml += "p.title a { text-decoration: none; color: #C34500; }";
-  infoHtml += "</style>";
-  infoHtml += "<p class=\"title\">";
+  var infoHtml = "<p class=\"title\">";
   if (marker.rm_title) {
     if (marker.rm_uri) {
       infoHtml += "<a href=\"http://" + marker.rm_uri + "\""

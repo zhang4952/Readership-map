@@ -18,6 +18,24 @@ $map-info-border: 1px;
   height: $map-width / $map-width-to-height;
   margin: 0 auto 0 auto;
   border: 0;
+
+  // Style Google Map InfoWindow
+  div.gm-style-iw {
+    font-family: Gudea, sans-serif;
+
+    p.title {
+      font-size: 16px;
+
+      a {
+        color: #C34500;
+        text-decoration: none;
+      }
+    }
+    
+    p.location {
+      font-size: 12px;
+    }
+  }
 }
 
 #map-info {
