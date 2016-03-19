@@ -21,10 +21,12 @@ $map-info-border: 1px;
 
   // Style Google Map InfoWindow
   div.gm-style-iw {
+    color: #555555;
     font-family: Gudea, sans-serif;
 
     p.title {
-      font-size: 16px;
+      margin: 0 0 6px 0;
+      font-size: 18px;
 
       a {
         color: #C34500;
@@ -33,6 +35,7 @@ $map-info-border: 1px;
     }
     
     p.location {
+      margin: 6px 0 0 0;
       font-size: 12px;
     }
   }
