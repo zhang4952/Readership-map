@@ -240,7 +240,7 @@ function markOnMap(reader) {
           lat: reader.lat,
           lng: reader.lng
         },
-      icon: "<%= asset_path('marker.png') %>",
+      icon: "<%= asset_path('marker-pv.png') %>",
       animation: google.maps.Animation.DROP,
       rm_country: reader.country,
       rm_region: reader.region,
@@ -251,24 +251,13 @@ function markOnMap(reader) {
   var marker = new google.maps.Marker(params);
 
   marker.addListener("click", function() {
-      if (marker != markerSelected) {
-        if (markerSelected) {
-          markerSelected.setIcon("<%= asset_path('marker.png') %>");
-        }
-        infoWindow.setContent(readerInfoHtml(marker));
-        google.maps.event.clearListeners(infoWindow, "closeclick");
-        infoWindow.addListener("closeclick",
-          function() {
-            marker.setIcon("<%= asset_path('marker.png') %>");
-            markerSelected = null;
-          });
-        infoWindow.open(map, marker);
-        marker.setIcon("<%= asset_path('marker-selected.png') %>"); 
-        markerSelected = marker;
-      } else {
+      if (marker == markerSelected) {
         infoWindow.close();
-        marker.setIcon("<%= asset_path('marker.png') %>"); 
         markerSelected = null;
+      } else {
+        markerSelected = marker;
+        infoWindow.setContent(readerInfoHtml(marker));
+        infoWindow.open(map, marker);
       }
     });
   marker.setMap(map);
