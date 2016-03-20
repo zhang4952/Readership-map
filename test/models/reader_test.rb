@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class PageviewTest < ActiveSupport::TestCase
+class ReaderTest < ActiveSupport::TestCase
   # test "the truth" do
   #   assert true
   # end

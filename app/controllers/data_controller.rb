@@ -12,23 +12,24 @@ class DataController < ApplicationController
   
     # Get recent readership data.
     def get_recent
-      pageviews = Pageview.recent
-      unless pageviews
+      readers = Reader.recent
+      unless readers
         return { 'error' => 'There was an error' }
       end
       rows = []
-      pageviews.each do |pageview|
-        uri = pageview.host + remove_query(pageview.path)
+      readers.each do |reader|
+        uri = reader.host + remove_query(reader.path)
         unless uri_excluded?(uri)
-          rows.push([pageview.time.iso8601,
-                     pageview.country,
-                     pageview.region,
-                     pageview.city,
-                     pageview.latitude,
-                     pageview.longitude,
-                     pageview.title,
+          rows.push([reader.time.iso8601,
+                     reader.country,
+                     reader.region,
+                     reader.city,
+                     reader.latitude,
+                     reader.longitude,
+                     reader.title,
                      uri,
-                     pageview.count])
+                     reader.activity,
+                     reader.count])
         end
       end
       { 'rows' => rows }

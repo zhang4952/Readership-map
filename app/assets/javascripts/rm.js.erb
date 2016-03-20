@@ -235,18 +235,26 @@ function displayOne() {
 
 /* Mark a reader on the map */
 function markOnMap(reader) {
+  var icon_path;
+  if (reader.activity == "pageview") {
+    icon_path = "<%= asset_path('marker-pv.png') %>";
+  }
+  else {
+    icon_path = "<%= asset_path('marker-dl.png') %>";
+  }
   var params = {
       position: {
           lat: reader.lat,
           lng: reader.lng
         },
-      icon: "<%= asset_path('marker-pv.png') %>",
+      icon: icon_path,
       animation: google.maps.Animation.DROP,
       rm_country: reader.country,
       rm_region: reader.region,
       rm_city: reader.city,
       rm_title: reader.title,
-      rm_uri: reader.uri
+      rm_uri: reader.uri,
+      rm_activity: reader.activity
     };
   var marker = new google.maps.Marker(params);
 
@@ -295,6 +303,14 @@ function readerInfoHtml(marker) {
   infoHtml += "</p>";
   if (marker.rm_city) {
     infoHtml += "<p class=\"location\">";
+    infoHtml += "<span class=\"activity\">";
+    if (marker.rm_activity == "pageview") {
+      infoHtml += "Viewed in ";
+    }
+    else {
+      infoHtml += "Downloaded in ";
+    }
+    infoHtml += "</span>";
     infoHtml += marker.rm_city;
     if (marker.rm_country == "United States") {
       infoHtml += marker.rm_region ? ", " + marker.rm_region : "";
@@ -317,7 +333,8 @@ function readerFromRow(row) {
       lng: parseFloat(row[5]),
       title: row[6],
       uri: row[7],
-      count: parseInt(row[8])
+      activity: row[8],
+      count: parseInt(row[9])
     };
 }
 

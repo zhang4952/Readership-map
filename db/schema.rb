@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160120030556) do
+ActiveRecord::Schema.define(version: 20160320012351) do
 
   create_table "pageviews", force: :cascade do |t|
     t.datetime "time"
@@ -31,6 +31,26 @@ ActiveRecord::Schema.define(version: 20160120030556) do
 
   add_index "pageviews", ["time", "host", "path", "city"], name: "index_pageviews_on_time_and_host_and_path_and_city", unique: true
   add_index "pageviews", ["time"], name: "index_pageviews_on_time"
+
+  create_table "readers", force: :cascade do |t|
+    t.datetime "time"
+    t.string   "country"
+    t.string   "region"
+    t.string   "city"
+    t.float    "latitude"
+    t.float    "longitude"
+    t.string   "host"
+    t.string   "path"
+    t.string   "title"
+    t.string   "language"
+    t.string   "activity"
+    t.integer  "count"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  add_index "readers", ["time", "host", "path", "city", "activity"], name: "index_readers_on_time_and_host_and_path_and_city_and_activity", unique: true
+  add_index "readers", ["time"], name: "index_readers_on_time"
 
   create_table "timestamps", force: :cascade do |t|
     t.string   "key"
