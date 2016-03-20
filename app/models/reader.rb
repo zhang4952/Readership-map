@@ -49,7 +49,7 @@ class Reader < ActiveRecord::Base
       # Filter out records without location data.
       filters = 'ga:city!=(not set)'
       if activity == 'download'
-        filters += ',ga:eventCategory==Bitstream'
+        filters += ';ga:eventCategory==Bitstream'
       end
 
       # Get most recent records.
