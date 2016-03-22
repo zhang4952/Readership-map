@@ -3,7 +3,7 @@
 var ReaderMap = (function() {
 
 /* Map variables */
-var map, markers, markerSelected, infoWindow;
+var map, markerSelected, infoWindow;
 
 /* Timing variables */
 var dataStartTime, dataEndTime;
@@ -121,7 +121,6 @@ function initMap() {
     ]
   };
   map = new google.maps.Map(document.getElementById("map"), params);
-  markers = [];
   markerSelected = null;
   infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
 }
@@ -235,20 +234,17 @@ function displayOne() {
 
 /* Mark a reader on the map */
 function markOnMap(reader) {
-  var icon_path;
-  if (reader.activity == "pageview") {
-    icon_path = "<%= asset_path('marker-pv.png') %>";
-  }
-  else {
-    icon_path = "<%= asset_path('marker-dl.png') %>";
-  }
+  var icon_path = (reader.activity == "pageview") ?
+    "<%= asset_path('marker-pv.png') %>" :
+    "<%= asset_path('marker-dl.png') %>";
   var params = {
       position: {
           lat: reader.lat,
           lng: reader.lng
         },
-      icon: icon_path,
       animation: google.maps.Animation.DROP,
+      icon: icon_path,
+      opacity: 1.0,
       rm_country: reader.country,
       rm_region: reader.region,
       rm_city: reader.city,
@@ -263,22 +259,20 @@ function markOnMap(reader) {
         infoWindow.close();
         markerSelected = null;
       } else {
-        markerSelected = marker;
         infoWindow.setContent(readerInfoHtml(marker));
         infoWindow.open(map, marker);
+        markerSelected = marker;
       }
     });
   marker.setMap(map);
 
-  /* Store references in case map needs to be cleared */
-  markers.push(marker);
-
   /* Remove marker after MARKER_EXPIRATION milliseconds */
-  setTimeout(function() { marker.setMap(null) }, MARKER_EXPIRATION);
+  setTimeout(function() { fadeOutMarker(marker); }, MARKER_EXPIRATION);
 
   $("#map-info").html(readerInfoHtml(marker));
 }
 
+/* Generate reader HTML corresponding to marker. */
 function readerInfoHtml(marker) {
   var infoHtml = "<p class=\"title\">";
   if (marker.rm_title) {
@@ -321,6 +315,22 @@ function readerInfoHtml(marker) {
     infoHtml += "</p>";
   }
   return infoHtml;
+}
+
+/* Fade out expired marker. */
+function fadeOutMarker(marker) {
+  var alpha = marker.getOpacity();
+  if (alpha > 0.1) {
+    marker.setOpacity(alpha - 0.1);
+    setTimeout(function() { fadeOutMarker(marker); }, 100);
+  }
+  else {
+    if (marker == markerSelected) {
+      infoWindow.close();
+      markerSelected == null;
+    }
+    marker.setMap(null);
+  }
 }
 
 function readerFromRow(row) {
