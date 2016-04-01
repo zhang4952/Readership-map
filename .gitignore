@@ -42,3 +42,6 @@ bower.json
 # Ignore spring
 /spring
 /spring-1000
+
+config/config.yml
+config/god.conf
