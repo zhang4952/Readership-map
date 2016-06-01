@@ -43,5 +43,13 @@ bower.json
 /spring
 /spring-1000
 
-config/config.yml
-config/god.conf
+/config/config.yml
+/config/god.conf
+/log/*
+/public/system
+/tags
+/tmp/*
+/.vagrant
+/config/unicorn.rb
+.coveralls.yml
+
