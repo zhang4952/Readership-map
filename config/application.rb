@@ -22,5 +22,9 @@ module ReaderData
 
     # Do not swallow errors in after_commit/after_rollback callbacks.
     config.active_record.raise_in_transactional_callbacks = true
+
+    # Remove SAMEORIGIN restriction so that content from this app can be
+    # displayed in frames at any URI (origin).
+    config.action_dispatch.default_headers.delete('X-Frame-Options')
   end
 end
