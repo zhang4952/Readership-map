@@ -8,16 +8,10 @@ html, body, div {
   margin: 0;
 }
 
-$map-width: 1024px;
-$map-width-to-height: 1024 / 700;
-$map-info-padding: 12px;
-$map-info-border: 1px;
-
 #map {
-  width: $map-width;
-  height: $map-width / $map-width-to-height;
+  width: 512px;
+  height: 360px;
   margin: 0 auto 0 auto;
-  border: 0;
 
   // Style Google Map InfoWindow
   div.gm-style-iw {
@@ -38,44 +32,5 @@ $map-info-border: 1px;
       margin: 6px 0 0 0;
       font-size: 12px;
     }
-  }
-}
-
-#map-info {
-  width: $map-width - 2*$map-info-padding - 2*$map-info-border;
-  height: 64px;
-  margin: 48px auto 0 auto;
-  border: $map-info-border solid #DDDDDD;
-  padding: $map-info-padding;
-  color: #555555;
-  font-family: Gudea, sans-serif;
-  text-align: center;
-
-  h1 {
-    margin: 0;
-    padding: 0;
-    font-size: 48px;
-    color: #DDDDDD;
-  }
-  
-  p.title {
-    margin: 0 0 8px 0;
-    padding: 0;
-    font-size: 24px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    a {
-      width: 470px;
-      color: #C34500;
-      text-decoration: none;
-    }
-  }
-
-  p.location {
-    margin: 8px 0 0 0;
-    padding: 0;
-    font-size: 16px;
   }
 }

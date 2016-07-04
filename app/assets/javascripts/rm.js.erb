@@ -51,8 +51,8 @@ function start() {
 function initMap() {
   var params = {
     center: { lat: 42, lng: 11 },
-    zoom: 2,
-    minZoom: 2,
+    zoom: 1,
+    minZoom: 1,
     zoomControl: true,
     mapTypeControl: false,
     streetViewControl: false,
@@ -234,9 +234,7 @@ function displayOne() {
 
 /* Mark a reader on the map */
 function markOnMap(reader) {
-  var icon_path = (reader.activity == "pageview") ?
-    "<%= asset_path('marker-pv.png') %>" :
-    "<%= asset_path('marker-dl.png') %>";
+  var icon_path = "<%= asset_path('marker.png') %>";
   var params = {
       position: {
           lat: reader.lat,
