@@ -123,6 +123,9 @@ function initMap() {
   map = new google.maps.Map(document.getElementById("map"), params);
   markerSelected = null;
   infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
+  infoWindow.addListener("closeclick", function() {
+      markerSelected = null;
+    });
 }
 
 function query() {
