@@ -20,10 +20,17 @@ test:
   <<: *default
   database: db/test.sqlite3
 
-production:
-  <<: *default
-  database: db/production.sqlite3
+production: &production
+  adapter: <%= ENV['READERSHIPMAP_ADAPTER'] || "sqlite3" %>
+  database: <%= ENV['READERSHIPMAP_DB'] || 'db/production.sqlite3' %>
+  encoding: utf8
+  reconnect: false
+  username: <%= ENV['READERSHIPMAP_DB_USERNAME'] %>
+  password: <%= ENV['READERSHIPMAP_DB_PASSWORD'] %>
+  host: <%= ENV['READERSHIPMAP_DB_HOST'] %>
+  port: <%= ENV['READERSHIPMAP_DB_PORT'] || 3306 %>
+  pool: 5
+  timeout: 5000
 
 staging:
-  <<: *default
-  database: db/staging.sqlite3
+  <<: *production
