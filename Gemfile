@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '2.3.0'
+# ruby '2.3.0'
 
 # Google APIs
 gem 'googleauth', '0.5.1'
@@ -44,6 +44,9 @@ group :development, :test do
   gem 'byebug'
   # Use sqlite3 as the database for development and testing
   gem 'sqlite3'
+  gem 'byebug'
+  gem 'pry-rails'
+  gem 'rspec-rails', '~>2.14.0'
 end
 
 group :development do
@@ -52,10 +55,13 @@ group :development do
 
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
+  gem 'capistrano', '~>2.0'
 end
 
-group :production do
+group :staging, :production do
   # These are required for deployment to Heroku
   gem 'pg', '0.18.4'
   gem 'rails_12factor', '0.0.3'
+  gem 'newrelic_rpm', '>=3.7.3'
+  gem 'mysql2'
 end
