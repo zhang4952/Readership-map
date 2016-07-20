@@ -3,16 +3,17 @@ require 'google/apis/analytics_v3'
 class Reader < ActiveRecord::Base
   validates :time, uniqueness: { scope: [:city, :host, :path, :activity] }
   
-  def self.recent
+  def self.recent(minutes)
+    minutes ||= 0
     last_query = Timestamp.find_by(key: 'last_query')
     if !last_query || Time.now - last_query.time > 10.minutes
       unless update_cache
         return nil
       end
     end
-    Reader.where(time: 60.minutes.ago..Time.now)
-            .order(time: :desc)
-            .to_a
+    Reader.where(time: minutes.minutes.ago..Time.now)
+          .order(time: :desc)
+          .to_a
   end
   
   def self.clear_old
@@ -50,6 +51,7 @@ class Reader < ActiveRecord::Base
       filters = 'ga:city!=(not set)'
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
+        filters += ';ga:eventAction==Download'
       end
 
       # Get most recent records.
@@ -57,7 +59,7 @@ class Reader < ActiveRecord::Base
 
       # Set this so that the results definitely will
       # go back far enough in time.
-      max = 600
+      max = 100000
 
       rows_1 = query('today', 'today', metrics, dims_1, filters, sort, max)
       rows_2 = query('today', 'today', metrics, dims_2, filters, sort, max)

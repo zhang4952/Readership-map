@@ -18,19 +18,25 @@ html, body, div {
     color: #555555;
     font-family: Gudea, sans-serif;
 
-    p.title {
-      margin: 0 0 6px 0;
-      font-size: 15px;
-
-      a {
-        color: #C34500;
-        text-decoration: none;
-      }
+    h1 {
+      margin: 0;
+      font-size: 14px;
     }
     
-    p.location {
+    h2 {
       margin: 6px 0 0 0;
       font-size: 12px;
+    }
+
+    h3 {
+      margin: 6px 0 0 0;
+      font-size: 11px;
+    }
+
+    a {
+      color: #C34500;
+      text-decoration: none;
+      font-size: 13px;
     }
   }
 }

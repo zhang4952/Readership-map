@@ -3,7 +3,7 @@
 var ReaderMap = (function() {
 
 /* Map variables */
-var map, markerSelected, infoWindow;
+var map, markerSelected, markerHighlighted, infoWindow, cities;
 
 /* Timing variables */
 var dataStartTime, dataEndTime;
@@ -44,7 +44,10 @@ function start() {
   dataStack = [];
   displayStack = [];
 
-  /* Make initial query */
+  /* Populate map with today's data */
+  populate();
+
+  /* Start querying for live data */
   query();
 }
 
@@ -122,10 +125,66 @@ function initMap() {
   };
   map = new google.maps.Map(document.getElementById("map"), params);
   markerSelected = null;
+  markerHighlighted = null;
   infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
   infoWindow.addListener("closeclick", function() {
       markerSelected = null;
     });
+  cities = {};
+}
+
+function populate() {
+  <% unless Rails.env.production? %>
+  console.log("Populating");
+  logState();
+  <% end %>
+
+  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
+      ".json?minutes=" + minutesOfHistory(),
+    function(data) {
+      handlePopulateQuery(data);
+    });
+}
+
+function minutesOfHistory() {
+/*
+  var now = new Date();
+  var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                          0, 0, 0);
+  return parseInt((now.getTime() - midnight.getTime()) / 60000);
+*/
+  return 90;
+}
+
+function handlePopulateQuery(response) {
+  <% unless Rails.env.production? %>
+  console.log("Handling populate query");
+  logState();
+  <% end %>
+
+  if (response && !response.error &&
+      response.rows && response.rows.length > 0) {
+
+    for (var i = response.rows.length - 1; i >= 0; i--) {
+      reader = readerFromRow(response.rows[i]);
+      if (reader.time < dataStartTime) {
+        markOnMap(reader, false);
+      }
+    }
+  }
+  <% unless Rails.env.production? %>
+  else {
+    if (!response) {
+      console.log("Populate query response null");
+    } else if (response.error) {
+      console.log("Populate query error: " + response.error.message);
+    } else if (!response.rows) {
+      console.log("Populate query response has no rows member");
+    } else if (response.rows.length <= 0) {
+      console.log("Populate query returned zero rows");
+    }
+  }
+  <% end %>
 }
 
 function query() {
@@ -138,7 +197,8 @@ function query() {
   dataEndTime = new Date();
   dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
                               QUERY_DELAY);
-  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" + ".json",
+  $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
+      ".json?minutes=" + 60,
     function(data) {
       handleQueryResponse(data);
     });
@@ -227,7 +287,7 @@ function displayOne() {
   <% end %>
 
   if (displayStack.length > 0) {
-    markOnMap(displayStack.pop());
+    markOnMap(displayStack.pop(), true);
   }
 
   if (displayStack.length <= 0) {
@@ -236,84 +296,117 @@ function displayOne() {
 }
 
 /* Mark a reader on the map */
-function markOnMap(reader) {
+function markOnMap(reader, animate) {
   var icon_path = "<%= asset_path('marker.png') %>";
-  var params = {
-      position: {
-          lat: reader.lat,
-          lng: reader.lng
-        },
-      animation: google.maps.Animation.DROP,
-      icon: icon_path,
-      opacity: 1.0,
-      rm_country: reader.country,
-      rm_region: reader.region,
-      rm_city: reader.city,
-      rm_title: reader.title,
-      rm_uri: reader.uri,
-      rm_activity: reader.activity
-    };
-  var marker = new google.maps.Marker(params);
+  var city_key = cityKey(reader);
+  if (!(city_key in cities)) {
+    var params = {
+        position: {
+            lat: reader.lat,
+            lng: reader.lng
+          },
+        animation: null,
+        icon: icon_path,
+        opacity: 1.0,
+        zIndex: 0,
+        rm_country: reader.country,
+        rm_region: reader.region,
+        rm_city: reader.city,
+        rm_readers: []
+      };
+    var marker = new google.maps.Marker(params);
 
-  marker.addListener("click", function() {
-      if (marker == markerSelected) {
-        infoWindow.close();
-        markerSelected = null;
-      } else {
-        infoWindow.setContent(readerInfoHtml(marker));
-        infoWindow.open(map, marker);
-        markerSelected = marker;
-      }
-    });
-  marker.setMap(map);
+    marker.addListener("click", function() {
+        if (marker == markerSelected) {
+          infoWindow.close();
+          marker.setZIndex(0);
+          markerSelected = null;
+        } else {
+          infoWindow.setContent(cityInfoHtml(marker));
+          infoWindow.open(map, marker);
+          marker.setZIndex(1);
+          markerSelected = marker;
+        }
+      });
+    marker.setMap(map);
+    cities[city_key] = marker;
+  }
 
-  /* Remove marker after MARKER_EXPIRATION milliseconds */
-  setTimeout(function() { fadeOutMarker(marker); }, MARKER_EXPIRATION);
+  addReaderToCity(reader, city_key, animate);
+}
 
-  $("#map-info").html(readerInfoHtml(marker));
+/* Add a reader to a city */
+function addReaderToCity(reader, cityKey, animate) {
+  cities[cityKey].rm_readers.push(reader);
+  if (animate) {
+    cities[cityKey].setAnimation(google.maps.Animation.BOUNCE);
+    setTimeout(function() {
+        cities[cityKey].setAnimation(null);
+      }, 2000);
+    if (markerHighlighted) {
+      markerHighlighted.setZIndex(0);
+    }
+    cities[cityKey].setZIndex(1);
+    markerHighlighted = cities[cityKey];
+  }
+}
+
+/* Generate city key string associated with reader's city */
+function cityKey(reader) {
+  return reader.city + ":" + reader.lat + "," + reader.lng;
 }
 
 /* Generate reader HTML corresponding to marker. */
-function readerInfoHtml(marker) {
-  var infoHtml = "<p class=\"title\">";
-  if (marker.rm_title) {
-    if (marker.rm_uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_uri + "\""
-        + " alt=\"" + marker.rm_title + "\" target=\"_blank\">";
+function cityInfoHtml(marker) {
+  var infoHtml = "<h1>" + marker.rm_city + ", ";
+  if (marker.rm_country == "United States") {
+    infoHtml += marker.rm_region;
+  } else {
+    infoHtml += marker.rm_country;
+  }
+  infoHtml += "</h1>";
+  infoHtml += "<h2>X views, Y downloads</h2>";
+  infoHtml += "<h3>Most recent:</h3>";
+  if (marker.rm_readers[0].title) {
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
+      " alt=\"" + marker.rm_readers[0].title +
+      "\" target=\"_blank\">";
     }
-    infoHtml += marker.rm_title;
-    if (marker.rm_uri) {
+    infoHtml += marker.rm_readers[0].title;
+    if (marker.rm_readers[0].uri) {
       infoHtml += "</a>";
     }
   } else {
-    if (marker.rm_uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_uri + "\""
-        + " alt=\"Untitled\" target=\"_blank\">";
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
+        " alt=\"Untitled\" target=\"_blank\">";
     }
     infoHtml += "(Untitled)";
-    if (marker.rm_uri) {
+    if (marker.rm_readers[0].uri) {
       infoHtml += "</a>";
     }
   }
-  infoHtml += "</p>";
-  if (marker.rm_city) {
-    infoHtml += "<p class=\"location\">";
-    infoHtml += "<span class=\"activity\">";
-    if (marker.rm_activity == "pageview") {
-      infoHtml += "Viewed in ";
+  infoHtml += "<h3>Most popular:</h3>";
+  if (marker.rm_readers[0].title) {
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
+      " alt=\"" + marker.rm_readers[0].title +
+      "\" target=\"_blank\">";
     }
-    else {
-      infoHtml += "Downloaded in ";
+    infoHtml += marker.rm_readers[0].title;
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "</a>";
     }
-    infoHtml += "</span>";
-    infoHtml += marker.rm_city;
-    if (marker.rm_country == "United States") {
-      infoHtml += marker.rm_region ? ", " + marker.rm_region : "";
+  } else {
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
+        " alt=\"Untitled\" target=\"_blank\">";
     }
-    else {
-      infoHtml += marker.rm_country ? ", " + marker.rm_country : "";
+    infoHtml += "(Untitled)";
+    if (marker.rm_readers[0].uri) {
+      infoHtml += "</a>";
     }
-    infoHtml += "</p>";
   }
   return infoHtml;
 }

@@ -1,7 +1,8 @@
 class DataController < ApplicationController
 
   def recent
-    @result = get_recent
+    minutes = params[:minutes].to_i
+    @result = get_recent(minutes)
     respond_to do |format|
       format.html
       format.json { render :json => @result }
@@ -11,8 +12,8 @@ class DataController < ApplicationController
   private
   
     # Get recent readership data.
-    def get_recent
-      readers = Reader.recent
+    def get_recent(minutes)
+      readers = Reader.recent(minutes)
       unless readers
         return { 'error' => 'There was an error' }
       end
