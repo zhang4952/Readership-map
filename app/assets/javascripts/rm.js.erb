@@ -387,27 +387,6 @@ function cityInfoHtml(marker) {
       infoHtml += "</a>";
     }
   }
-  infoHtml += "<h3>Most popular:</h3>";
-  if (marker.rm_readers[0].title) {
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
-      " alt=\"" + marker.rm_readers[0].title +
-      "\" target=\"_blank\">";
-    }
-    infoHtml += marker.rm_readers[0].title;
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "</a>";
-    }
-  } else {
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
-        " alt=\"Untitled\" target=\"_blank\">";
-    }
-    infoHtml += "(Untitled)";
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "</a>";
-    }
-  }
   return infoHtml;
 }
 
