@@ -6,6 +6,7 @@ var ReaderMap = (function() {
 var map, markerSelected, markerHighlighted, infoWindow, cities;
 
 /* Timing variables */
+var startTime;
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
 
@@ -30,6 +31,8 @@ function start() {
 
   /* Initialize */
   initMap();
+  startTime = new Date();
+  startTime.setMinutes(startTime.getMinutes() - 90);
   dataStartTime = new Date();
   dataStartTime.setSeconds(0, 0);
   dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
@@ -153,7 +156,7 @@ function minutesOfHistory() {
                           0, 0, 0);
   return parseInt((now.getTime() - midnight.getTime()) / 60000);
 */
-  return 90;
+  return 60;
 }
 
 function handlePopulateQuery(response) {
@@ -312,7 +315,9 @@ function markOnMap(reader, animate) {
         rm_country: reader.country,
         rm_region: reader.region,
         rm_city: reader.city,
-        rm_readers: []
+        rm_readers: [],
+        rm_views: 0,
+        rm_downloads: 0
       };
     var marker = new google.maps.Marker(params);
 
@@ -338,6 +343,15 @@ function markOnMap(reader, animate) {
 /* Add a reader to a city */
 function addReaderToCity(reader, cityKey, animate) {
   cities[cityKey].rm_readers.push(reader);
+  if (reader.activity == "pageview") {
+    cities[cityKey].rm_views += reader.count;
+  }
+  if (reader.activity == "download") {
+    cities[cityKey].rm_downloads += reader.count;
+  }
+  if (markerSelected == cities[cityKey]) {
+    infoWindow.setContent(cityInfoHtml(cities[cityKey]));
+  }
   if (animate) {
     cities[cityKey].setAnimation(google.maps.Animation.BOUNCE);
     setTimeout(function() {
@@ -365,7 +379,23 @@ function cityInfoHtml(marker) {
     infoHtml += marker.rm_country;
   }
   infoHtml += "</h1>";
-  infoHtml += "<h2>X views, Y downloads</h2>";
+  infoHtml += "<h2>";
+  if (marker.rm_views > 0) {
+    infoHtml += marker.rm_views + " view";
+    if (marker.rm_views > 1) {
+      infoHtml += "s";
+    }
+    if (marker.rm_downloads > 0) {
+      infoHtml += ", ";
+    }
+  }
+  if (marker.rm_downloads > 0) {
+    infoHtml += marker.rm_downloads + " download";
+    if (marker.rm_downloads > 1) {
+      infoHtml += "s";
+    }
+  }
+  infoHtml += " since " + startTime.toLocaleTimeString() + "</h2>";
   infoHtml += "<h3>Most recent:</h3>";
   if (marker.rm_readers[0].title) {
     if (marker.rm_readers[0].uri) {
