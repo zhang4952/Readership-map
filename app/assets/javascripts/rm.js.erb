@@ -156,7 +156,7 @@ function minutesOfHistory() {
                           0, 0, 0);
   return parseInt((now.getTime() - midnight.getTime()) / 60000);
 */
-  return 60;
+  return 90;
 }
 
 function handlePopulateQuery(response) {
@@ -356,11 +356,13 @@ function addReaderToCity(reader, cityKey, animate) {
     cities[cityKey].setAnimation(google.maps.Animation.BOUNCE);
     setTimeout(function() {
         cities[cityKey].setAnimation(null);
-      }, 2000);
+      }, 2100);
     if (markerHighlighted) {
       markerHighlighted.setZIndex(0);
+      markerHighlighted.setIcon("<%= asset_path('marker.png') %>");
     }
     cities[cityKey].setZIndex(1);
+    cities[cityKey].setIcon("<%= asset_path('marker-selected.png') %>");
     markerHighlighted = cities[cityKey];
   }
 }
