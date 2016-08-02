@@ -9,7 +9,7 @@ html, body, div {
 }
 
 #map {
-  width: 700px;
+  width: 760px;
   height: 400px;
   margin: 0 auto 0 auto;
 
@@ -39,4 +39,22 @@ html, body, div {
       font-size: 13px;
     }
   }
+}
+
+#clear {
+  margin: 4px;
+  border: solid #CCC 1px;
+  border-radius: 2px;
+  padding: 4px;
+  background-color: #FFFFFF;
+  color: #666666;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#clear:hover {
+  color: #222222;
 }

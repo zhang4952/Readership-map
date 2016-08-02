@@ -57,8 +57,8 @@ function start() {
 /* Initialize the map */
 function initMap() {
   var params = {
-    center: { lat: 38, lng: -96 },
-    zoom: 4,
+    center: { lat: 38, lng: -102 },
+    zoom: 3,
     minZoom: 2,
     zoomControl: true,
     mapTypeControl: false,
@@ -132,9 +132,32 @@ function initMap() {
   markerHighlighted = null;
   infoWindow = new google.maps.InfoWindow({ maxWidth: 300 });
   infoWindow.addListener("closeclick", function() {
-      markerSelected = null;
+      selectMarker(markerSelected);
     });
   cities = {};
+
+  var clearControlDiv = document.createElement('div');
+  var clearControl = new ClearControl(clearControlDiv, map);
+  map.controls[google.maps.ControlPosition.TOP_RIGHT].push(clearControlDiv);
+}
+
+function ClearControl(controlDiv, map) {
+  var control = document.createElement("div");
+  control.id = "clear";
+  control.title = "Click to clear the map";
+  control.innerHTML = "Clear map";
+  controlDiv.appendChild(control);
+  control.addEventListener('click', function() {
+    clear();
+  });
+}
+
+function clear() {
+  for (var city in cities) {
+    cities[city].setMap(null);
+  }
+  cities = {};
+  startTime = new Date();
 }
 
 function populate() {
@@ -157,7 +180,7 @@ function minutesOfHistory() {
                           0, 0, 0);
   return parseInt((now.getTime() - midnight.getTime()) / 60000);
 */
-  return 90;
+  return 60;
 }
 
 function handlePopulateQuery(response) {
