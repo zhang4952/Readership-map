@@ -32,7 +32,7 @@ function start() {
   /* Initialize */
   initMap();
   startTime = new Date();
-  startTime.setMinutes(startTime.getMinutes() - 90);
+  startTime.setMinutes(startTime.getMinutes() - minutesOfHistory());
   dataStartTime = new Date();
   dataStartTime.setSeconds(0, 0);
   dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
@@ -54,6 +54,7 @@ function start() {
   query();
 }
 
+/* Initialize the map */
 function initMap() {
   var params = {
     center: { lat: 42, lng: 11 },
@@ -322,16 +323,7 @@ function markOnMap(reader, animate) {
     var marker = new google.maps.Marker(params);
 
     marker.addListener("click", function() {
-        if (marker == markerSelected) {
-          infoWindow.close();
-          marker.setZIndex(0);
-          markerSelected = null;
-        } else {
-          infoWindow.setContent(cityInfoHtml(marker));
-          infoWindow.open(map, marker);
-          marker.setZIndex(1);
-          markerSelected = marker;
-        }
+        selectMarker(marker);
       });
     marker.setMap(map);
     cities[city_key] = marker;
@@ -357,14 +349,43 @@ function addReaderToCity(reader, cityKey, animate) {
     setTimeout(function() {
         cities[cityKey].setAnimation(null);
       }, 2100);
-    if (markerHighlighted) {
-      markerHighlighted.setZIndex(0);
-      markerHighlighted.setIcon("<%= asset_path('marker.png') %>");
-    }
-    cities[cityKey].setZIndex(1);
-    cities[cityKey].setIcon("<%= asset_path('marker-selected.png') %>");
-    markerHighlighted = cities[cityKey];
+    highlightMarker(cities[cityKey]);
   }
+}
+
+function selectMarker(marker) {
+  if (marker == markerSelected) {
+    infoWindow.close();
+    marker.setZIndex(0);
+    markerSelected = null;
+  } else {
+    infoWindow.setContent(cityInfoHtml(marker));
+    infoWindow.open(map, marker);
+    marker.setZIndex(2);
+    markerSelected = marker;
+  }
+}
+
+function highlightMarker(marker) {
+  if (markerHighlighted) {
+    markerHighlighted.setZIndex(0);
+    markerHighlighted.setIcon(markerPath());
+  }
+  if (marker != markerHighlighted) {
+    marker.setZIndex(1);
+    marker.setIcon(markerHighlightedPath());
+    markerHighlighted = marker;
+  } else {
+    markerHighlighted = null;
+  }
+}
+
+function markerPath() {
+  return "<%= asset_path('marker.png') %>";
+}
+
+function markerHighlightedPath() {
+  return "<%= asset_path('marker-highlighted.png') %>";
 }
 
 /* Generate city key string associated with reader's city */
@@ -420,22 +441,6 @@ function cityInfoHtml(marker) {
     }
   }
   return infoHtml;
-}
-
-/* Fade out expired marker. */
-function fadeOutMarker(marker) {
-  var alpha = marker.getOpacity();
-  if (alpha > 0.1) {
-    marker.setOpacity(alpha - 0.1);
-    setTimeout(function() { fadeOutMarker(marker); }, 100);
-  }
-  else {
-    if (marker == markerSelected) {
-      infoWindow.close();
-      markerSelected == null;
-    }
-    marker.setMap(null);
-  }
 }
 
 function readerFromRow(row) {
