@@ -16,6 +16,9 @@ var QUERY_INTERVAL = 600000;
 var DISPLAY_INTERVAL = 60000;
 var MARKER_EXPIRATION = 1800000;
 
+/* Info text parameters */
+var MAX_TITLE_LENGTH = 90;
+
 /* Interval timers */
 var queryTimer, displayTimer, displayOneTimer;
 
@@ -339,9 +342,8 @@ function markOnMap(reader, animate) {
         rm_country: reader.country,
         rm_region: reader.region,
         rm_city: reader.city,
-        rm_readers: [],
-        rm_views: 0,
-        rm_downloads: 0
+        rm_views: [],
+        rm_downloads: []
       };
     var marker = new google.maps.Marker(params);
 
@@ -357,12 +359,10 @@ function markOnMap(reader, animate) {
 
 /* Add a reader to a city */
 function addReaderToCity(reader, cityKey, animate) {
-  cities[cityKey].rm_readers.push(reader);
   if (reader.activity == "pageview") {
-    cities[cityKey].rm_views += reader.count;
-  }
-  if (reader.activity == "download") {
-    cities[cityKey].rm_downloads += reader.count;
+    cities[cityKey].rm_views.push(reader);
+  } else {
+    cities[cityKey].rm_downloads.push(reader);
   }
   if (markerSelected == cities[cityKey]) {
     infoWindow.setContent(cityInfoHtml(cities[cityKey]));
@@ -425,43 +425,86 @@ function cityInfoHtml(marker) {
     infoHtml += marker.rm_country;
   }
   infoHtml += "</h1>";
+  
   infoHtml += "<h2>";
-  if (marker.rm_views > 0) {
-    infoHtml += marker.rm_views + " view";
-    if (marker.rm_views > 1) {
+  if (marker.rm_views.length > 0) {
+    infoHtml += marker.rm_views.length + " view";
+    if (marker.rm_views.length > 1) {
       infoHtml += "s";
     }
-    if (marker.rm_downloads > 0) {
+    if (marker.rm_downloads.length > 0) {
       infoHtml += ", ";
     }
   }
-  if (marker.rm_downloads > 0) {
-    infoHtml += marker.rm_downloads + " download";
-    if (marker.rm_downloads > 1) {
+  if (marker.rm_downloads.length > 0) {
+    infoHtml += marker.rm_downloads.length + " download";
+    if (marker.rm_downloads.length > 1) {
       infoHtml += "s";
     }
   }
   infoHtml += " since " + startTime.toLocaleTimeString() + "</h2>";
-  infoHtml += "<h3>Most recent:</h3>";
-  if (marker.rm_readers[0].title) {
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
-      " alt=\"" + marker.rm_readers[0].title +
-      "\" target=\"_blank\">";
+  
+  if (marker.rm_views.length > 0) {
+    infoHtml += "<h3>Last viewed:</h3>";
+    infoHtml += "<p>";
+    var lastViewed = marker.rm_views[marker.rm_views.length - 1];
+    if (lastViewed.title) {
+      if (lastViewed.uri) {
+        infoHtml += "<a href=\"http://" + lastViewed.uri + "\"" +
+        " alt=\"" + lastViewed.title +
+        "\" target=\"_blank\">";
+      }
+      if (lastViewed.title.length <= MAX_TITLE_LENGTH) {
+        infoHtml += lastViewed.title;
+      } else {
+        infoHtml += lastViewed.title.substring(0, MAX_TITLE_LENGTH - 1) +
+          "&hellip;";
+      }
+      if (lastViewed.uri) {
+        infoHtml += "</a>";
+      }
+    } else {
+      if (lastViewed.uri) {
+        infoHtml += "<a href=\"http://" + lastViewed.uri + "\"" +
+          " alt=\"Untitled\" target=\"_blank\">";
+      }
+      infoHtml += "(Untitled)";
+      if (lastViewed.uri) {
+        infoHtml += "</a>";
+      }
     }
-    infoHtml += marker.rm_readers[0].title;
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "</a>";
+    infoHtml += "</p>";
+  }
+  if (marker.rm_downloads.length > 0) {
+    infoHtml += "<h3>Last downloaded:</h3>";
+    infoHtml += "<p>";
+    var lastDownloaded = marker.rm_downloads[marker.rm_downloads.length - 1];
+    if (lastDownloaded.title) {
+      if (lastDownloaded.uri) {
+        infoHtml += "<a href=\"http://" + lastDownloaded.uri + "\"" +
+        " alt=\"" + lastDownloaded.title +
+        "\" target=\"_blank\">";
+      }
+      if (lastDownloaded.title.length <= MAX_TITLE_LENGTH) {
+        infoHtml += lastDownloaded.title;
+      } else {
+        infoHtml += lastDownloaded.title.substring(0, MAX_TITLE_LENGTH - 1) +
+          "&hellip;";
+      }
+      if (lastDownloaded.uri) {
+        infoHtml += "</a>";
+      }
+    } else {
+      if (lastDownloaded.uri) {
+        infoHtml += "<a href=\"http://" + lastDownloaded.uri + "\"" +
+          " alt=\"Untitled\" target=\"_blank\">";
+      }
+      infoHtml += "(Untitled)";
+      if (lastDownloaded.uri) {
+        infoHtml += "</a>";
+      }
     }
-  } else {
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "<a href=\"http://" + marker.rm_readers[0].uri + "\"" +
-        " alt=\"Untitled\" target=\"_blank\">";
-    }
-    infoHtml += "(Untitled)";
-    if (marker.rm_readers[0].uri) {
-      infoHtml += "</a>";
-    }
+    infoHtml += "</p>";
   }
   return infoHtml;
 }
