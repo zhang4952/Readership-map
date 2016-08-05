@@ -59,7 +59,7 @@ end
 
 group :staging, :production do
   # These are required for deployment to Heroku
-  gem 'pg', '0.18.4'
-  gem 'rails_12factor', '0.0.3'
+  # gem 'pg', '0.18.4'
+  # gem 'rails_12factor', '0.0.3'
   gem 'newrelic_rpm', '>=3.7.3'
 end
