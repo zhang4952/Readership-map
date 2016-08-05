@@ -18,7 +18,7 @@ class DataController < ApplicationController
       end
       rows = []
       readers.each do |reader|
-        uri = reader.host + remove_query(reader.path)
+        uri = reader.host + reader.path
         unless uri_excluded?(uri)
           rows.push([reader.time.iso8601,
                      reader.country,
@@ -45,18 +45,5 @@ class DataController < ApplicationController
         end
       end
       false
-    end
-
-    # Remove query from URI path.
-    def remove_query(path)
-      query_start = path.index('?')
-      unless query_start.nil?
-        if query_start == 0
-          return ''
-        else
-          return path[0..query_start-1]
-        end
-      end
-      path
     end
 end

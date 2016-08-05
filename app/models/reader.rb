@@ -26,6 +26,19 @@ class Reader < ActiveRecord::Base
 
   private
 
+    # Remove query from URI path.
+    def self.remove_query(path)
+      query_start = path.index('?')
+      unless query_start.nil?
+        if query_start == 0
+          return ''
+        else
+          return path[0..query_start-1]
+        end
+      end
+      path
+    end
+
     def self.update_cache_for_activity(activity)
       # A maximum of 7 dimensions can be used in each query,
       # so we query multiple times using a set of dimensions,
@@ -73,7 +86,8 @@ class Reader < ActiveRecord::Base
       rows_1.each do |row|
         time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
                         ENV['GA_UTC_OFFSET'])
-        reader = new(time: time, city: row[2], host: row[3], path: row[4],
+        path = remove_query(row[4])
+        reader = new(time: time, city: row[2], host: row[3], path: path,
                      country: row[5], region: row[6], activity: activity,
                      count: row[7])
         reader.save
@@ -82,8 +96,9 @@ class Reader < ActiveRecord::Base
       rows_2.each do |row|
         time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
                         ENV['GA_UTC_OFFSET'])
+        path = remove_query(row[4])
         existing = find_by(time: time, city: row[2], host: row[3],
-                           path: row[4], activity: activity)
+                           path: path, activity: activity)
         if existing
           existing.latitude = row[5]
           existing.longitude = row[6]
@@ -94,8 +109,9 @@ class Reader < ActiveRecord::Base
       rows_3.each do |row|
         time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
                         ENV['GA_UTC_OFFSET'])
+        path = remove_query(row[4])
         existing = find_by(time: time, city: row[2], host: row[3],
-                           path: row[4], activity: activity)
+                           path: path, activity: activity)
         if existing
           existing.title = row[5]
           existing.language = row[6]
