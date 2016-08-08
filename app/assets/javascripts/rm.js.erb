@@ -441,7 +441,7 @@ function cityInfoHtml(marker) {
     if (lastViewed.title) {
       if (lastViewed.uri) {
         infoHtml += "<a href=\"http://" + lastViewed.uri + "\"" +
-        " alt=\"" + lastViewed.title +
+        " title=\"" + lastViewed.title +
         "\" target=\"_blank\">";
       }
       if (lastViewed.title.length <= MAX_TITLE_LENGTH) {
