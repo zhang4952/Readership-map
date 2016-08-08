@@ -9,8 +9,8 @@ html, body, div {
 }
 
 #map {
-  width: 760px;
-  height: 400px;
+  width: 1024px;
+  height: 512px;
   margin: 0 auto 0 auto;
 
   // Style Google Map InfoWindow
@@ -20,27 +20,34 @@ html, body, div {
 
     h1 {
       margin: 0;
-      font-size: 14px;
+      font-size: 16px;
+      font-weight: bold;
     }
     
     h2 {
-      margin: 6px 0 0 0;
+      margin: 4px 0 0 0;
       font-size: 12px;
     }
 
     h3 {
-      margin: 6px 0 0 0;
+      margin: 8px 0 0 0;
+      color: #999999;
       font-size: 11px;
     }
 
     a {
       color: #C34500;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    a:hover {
+      color: #993600;
     }
 
     p {
-      margin: 0;
+      margin: 3px 0 0 0;
       padding: 0;
     }
   }

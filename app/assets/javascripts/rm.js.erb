@@ -60,8 +60,8 @@ function start() {
 /* Initialize the map */
 function initMap() {
   var params = {
-    center: { lat: 38, lng: -102 },
-    zoom: 3,
+    center: { lat: 24, lng: 12 },
+    zoom: 2,
     minZoom: 2,
     zoomControl: true,
     mapTypeControl: false,
@@ -147,7 +147,7 @@ function initMap() {
 function ClearControl(controlDiv, map) {
   var control = document.createElement("div");
   control.id = "clear";
-  control.title = "Click to clear the map";
+  control.title = "Clear the map";
   control.innerHTML = "Clear map";
   controlDiv.appendChild(control);
   control.addEventListener('click', function() {
@@ -339,8 +339,6 @@ function markOnMap(reader, animate) {
         icon: icon_path,
         opacity: 1.0,
         zIndex: 0,
-        rm_country: reader.country,
-        rm_region: reader.region,
         rm_city: reader.city,
         rm_views: [],
         rm_downloads: []
@@ -359,7 +357,7 @@ function markOnMap(reader, animate) {
 
 /* Add a reader to a city */
 function addReaderToCity(reader, cityKey, animate) {
-  if (reader.activity == "pageview") {
+  if (reader.activity == "view") {
     cities[cityKey].rm_views.push(reader);
   } else {
     cities[cityKey].rm_downloads.push(reader);
@@ -390,7 +388,7 @@ function selectMarker(marker) {
 }
 
 function highlightMarker(marker) {
-  if (markerHighlighted) {
+  if (markerHighlighted && marker != markerHighlighted) {
     markerHighlighted.setZIndex(0);
     markerHighlighted.setIcon(markerPath());
   }
@@ -398,8 +396,6 @@ function highlightMarker(marker) {
     marker.setZIndex(1);
     marker.setIcon(markerHighlightedPath());
     markerHighlighted = marker;
-  } else {
-    markerHighlighted = null;
   }
 }
 
@@ -418,13 +414,7 @@ function cityKey(reader) {
 
 /* Generate reader HTML corresponding to marker. */
 function cityInfoHtml(marker) {
-  var infoHtml = "<h1>" + marker.rm_city + ", ";
-  if (marker.rm_country == "United States") {
-    infoHtml += marker.rm_region;
-  } else {
-    infoHtml += marker.rm_country;
-  }
-  infoHtml += "</h1>";
+  var infoHtml = "<h1>" + marker.rm_city + "</h1>";
   
   infoHtml += "<h2>";
   if (marker.rm_views.length > 0) {
@@ -445,7 +435,7 @@ function cityInfoHtml(marker) {
   infoHtml += " since " + startTime.toLocaleTimeString() + "</h2>";
   
   if (marker.rm_views.length > 0) {
-    infoHtml += "<h3>Last viewed:</h3>";
+    infoHtml += "<h3>Last viewed</h3>";
     infoHtml += "<p>";
     var lastViewed = marker.rm_views[marker.rm_views.length - 1];
     if (lastViewed.title) {
@@ -476,7 +466,7 @@ function cityInfoHtml(marker) {
     infoHtml += "</p>";
   }
   if (marker.rm_downloads.length > 0) {
-    infoHtml += "<h3>Last downloaded:</h3>";
+    infoHtml += "<h3>Last downloaded</h3>";
     infoHtml += "<p>";
     var lastDownloaded = marker.rm_downloads[marker.rm_downloads.length - 1];
     if (lastDownloaded.title) {
@@ -512,15 +502,13 @@ function cityInfoHtml(marker) {
 function readerFromRow(row) {
   return {
       time: new Date(Date.parse(row[0])),
-      country: row[1] != "(not set)" ? row[1] : null,
-      region: row[2] != "(not set)" ? row[2] : null,
-      city: row[3] != "(not set)" ? row[3] : null,
-      lat: parseFloat(row[4]),
-      lng: parseFloat(row[5]),
-      title: row[6],
-      uri: row[7],
-      activity: row[8],
-      count: parseInt(row[9])
+      city: row[1],
+      lat: parseFloat(row[2]),
+      lng: parseFloat(row[3]),
+      title: row[4],
+      uri: "<%= ENV['URI_HOST'] %>" + row[5],
+      activity: row[6],
+      count: parseInt(row[7])
     };
 }
 

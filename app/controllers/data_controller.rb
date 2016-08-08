@@ -1,7 +1,7 @@
 class DataController < ApplicationController
 
   def recent
-    minutes = params[:minutes].to_i
+    minutes = params[:minutes] ? params[:minutes].to_i : 60
     @result = get_recent(minutes)
     respond_to do |format|
       format.html
@@ -19,16 +19,13 @@ class DataController < ApplicationController
       end
       rows = []
       readers.each do |reader|
-        uri = reader.host + reader.path
-        unless uri_excluded?(uri)
+        unless uri_excluded?(reader.path)
           rows.push([reader.time.iso8601,
-                     reader.country,
-                     reader.region,
                      reader.city,
                      reader.latitude,
                      reader.longitude,
                      reader.title,
-                     uri,
+                     reader.path,
                      reader.activity,
                      reader.count])
         end
