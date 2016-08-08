@@ -11,7 +11,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160808040900) do
+ActiveRecord::Schema.define(version: 20160808225624) do
+
+  create_table "cities", force: :cascade do |t|
+    t.string   "city"
+    t.float    "latitude"
+    t.float    "longitude"
+    t.string   "region"
+    t.string   "country"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  add_index "cities", ["city", "latitude", "longitude"], name: "index_cities_on_city_and_latitude_and_longitude", unique: true
 
   create_table "readers", force: :cascade do |t|
     t.datetime "time"

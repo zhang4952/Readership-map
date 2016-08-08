@@ -14,18 +14,24 @@ class DataController < ApplicationController
     # Get recent readership data.
     def get_recent(minutes)
       readers = Reader.recent(minutes)
+      City.update_for_today
       unless readers
         return { 'error' => 'There was an error' }
       end
       rows = []
       readers.each do |reader|
+        city = City.find_by(city: reader.city,
+                            latitude: reader.latitude,
+                            longitude: reader.longitude)
         unless uri_excluded?(reader.path)
           rows.push([reader.time.iso8601,
+                     city.country,
+                     city.region,
                      reader.city,
                      reader.latitude,
                      reader.longitude,
                      reader.title,
-                     reader.path,
+                     ENV['URI_HOST'] + reader.path,
                      reader.activity,
                      reader.count])
         end

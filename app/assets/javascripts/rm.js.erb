@@ -17,7 +17,7 @@ var DISPLAY_INTERVAL = 60000;
 var MARKER_EXPIRATION = 1800000;
 
 /* Info text parameters */
-var MAX_TITLE_LENGTH = 90;
+var MAX_TITLE_LENGTH = 75;
 
 /* Interval timers */
 var queryTimer, displayTimer, displayOneTimer;
@@ -339,6 +339,8 @@ function markOnMap(reader, animate) {
         icon: icon_path,
         opacity: 1.0,
         zIndex: 0,
+        rm_country: reader.country,
+        rm_region: reader.region,
         rm_city: reader.city,
         rm_views: [],
         rm_downloads: []
@@ -414,7 +416,13 @@ function cityKey(reader) {
 
 /* Generate reader HTML corresponding to marker. */
 function cityInfoHtml(marker) {
-  var infoHtml = "<h1>" + marker.rm_city + "</h1>";
+  var infoHtml = "<h1>" + marker.rm_city + ", ";
+  if (marker.rm_country == "United States") {
+    infoHtml += marker.rm_region;
+  } else {
+    infoHtml += marker.rm_country;
+  }
+  infoHtml += "</h1>";
   
   infoHtml += "<h2>";
   if (marker.rm_views.length > 0) {
@@ -502,13 +510,15 @@ function cityInfoHtml(marker) {
 function readerFromRow(row) {
   return {
       time: new Date(Date.parse(row[0])),
-      city: row[1],
-      lat: parseFloat(row[2]),
-      lng: parseFloat(row[3]),
-      title: row[4],
-      uri: "<%= ENV['URI_HOST'] %>" + row[5],
-      activity: row[6],
-      count: parseInt(row[7])
+      country: row[1],
+      region: row[2],
+      city: row[3],
+      lat: parseFloat(row[4]),
+      lng: parseFloat(row[5]),
+      title: row[6],
+      uri: row[7],
+      activity: row[8],
+      count: parseInt(row[9])
     };
 }
 
