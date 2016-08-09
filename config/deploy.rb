@@ -31,7 +31,7 @@ after 'deploy:restart', 'deploy:cleanup'
 namespace :deploy do
   desc "Symlinks required configuration files"
   task :symlink_config, :roles => :app do
-    %w{config.yml god.conf}.each do |config_file|
+    %w{config.yml god.conf application.yml}.each do |config_file|
       run "ln -nfs #{deploy_to}/shared/config/#{config_file} #{release_path}/config/#{config_file}"
     end
   end
