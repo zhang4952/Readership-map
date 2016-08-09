@@ -9,8 +9,8 @@ html, body, div {
 }
 
 #map {
-  width: 700px;
-  height: 400px;
+  width: 1024px;
+  height: 512px;
   margin: 0 auto 0 auto;
 
   // Style Google Map InfoWindow
@@ -18,19 +18,55 @@ html, body, div {
     color: #555555;
     font-family: Gudea, sans-serif;
 
-    p.title {
-      margin: 0 0 6px 0;
-      font-size: 15px;
-
-      a {
-        color: #C34500;
-        text-decoration: none;
-      }
+    h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: bold;
     }
     
-    p.location {
-      margin: 6px 0 0 0;
+    h2 {
+      margin: 4px 0 0 0;
       font-size: 12px;
     }
+
+    h3 {
+      margin: 8px 0 0 0;
+      color: #999999;
+      font-size: 11px;
+    }
+
+    a {
+      color: #C34500;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    a:hover {
+      color: #993600;
+    }
+
+    p {
+      margin: 3px 0 0 0;
+      padding: 0;
+    }
   }
+}
+
+#clear {
+  margin: 4px;
+  border: solid #CCC 1px;
+  border-radius: 2px;
+  padding: 4px;
+  background-color: #FFFFFF;
+  color: #666666;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#clear:hover {
+  color: #222222;
 }

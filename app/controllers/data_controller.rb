@@ -1,7 +1,8 @@
 class DataController < ApplicationController
 
   def recent
-    @result = get_recent
+    minutes = params[:minutes] ? params[:minutes].to_i : 60
+    @result = get_recent(minutes)
     respond_to do |format|
       format.html
       format.json { render :json => @result }
@@ -11,23 +12,26 @@ class DataController < ApplicationController
   private
   
     # Get recent readership data.
-    def get_recent
-      readers = Reader.recent
+    def get_recent(minutes)
+      readers = Reader.recent(minutes)
+      City.update_for_today
       unless readers
         return { 'error' => 'There was an error' }
       end
       rows = []
       readers.each do |reader|
-        uri = reader.host + reader.path
-        unless uri_excluded?(uri)
+        city = City.find_by(city: reader.city,
+                            latitude: reader.latitude,
+                            longitude: reader.longitude)
+        unless uri_excluded?(reader.path)
           rows.push([reader.time.iso8601,
-                     reader.country,
-                     reader.region,
+                     city.country,
+                     city.region,
                      reader.city,
                      reader.latitude,
                      reader.longitude,
                      reader.title,
-                     uri,
+                     ENV['URI_HOST'] + reader.path,
                      reader.activity,
                      reader.count])
         end

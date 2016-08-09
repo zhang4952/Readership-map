@@ -1,26 +1,27 @@
 require 'google/apis/analytics_v3'
 
 class Reader < ActiveRecord::Base
-  validates :time, uniqueness: { scope: [:city, :host, :path, :activity] }
-  
-  def self.recent
+  validates :time, uniqueness: {
+    scope: [:latitude, :longitude, :path, :activity] }
+
+  def self.recent(minutes)
     last_query = Timestamp.find_by(key: 'last_query')
     if !last_query || Time.now - last_query.time > 10.minutes
       unless update_cache
         return nil
       end
     end
-    Reader.where(time: 60.minutes.ago..Time.now)
-            .order(time: :desc)
-            .to_a
+    Reader.where(time: minutes.minutes.ago..Time.now)
+          .order(time: :desc)
+          .to_a
   end
   
-  def self.clear_old
-    Reader.where('time < ?', 1.day.ago).destroy_all
+  def self.clean(days)
+    Reader.where('time < ?', days.days.ago).delete_all
   end
   
   def self.update_cache
-    update_cache_for_activity('pageview')
+    update_cache_for_activity('view')
     update_cache_for_activity('download')
   end
 
@@ -54,15 +55,14 @@ class Reader < ActiveRecord::Base
       else
         metrics = 'ga:pageviews'
       end
-      dims_key = 'ga:hour,ga:minute,ga:city,ga:hostName,ga:pagePath'
-      dims_1 = dims_key + ',ga:country,ga:region'
-      dims_2 = dims_key + ',ga:latitude,ga:longitude'
-      dims_3 = dims_key + ',ga:pageTitle,ga:language'
+      dims = 'ga:hour,ga:minute,ga:city,ga:latitude,ga:longitude,'
+      dims += 'ga:pageTitle,ga:pagePath'
 
       # Filter out records without location data.
       filters = 'ga:city!=(not set)'
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
+        filters += ';ga:eventAction==Download'
       end
 
       # Get most recent records.
@@ -70,12 +70,10 @@ class Reader < ActiveRecord::Base
 
       # Set this so that the results definitely will
       # go back far enough in time.
-      max = 600
+      max = 100000
 
-      rows_1 = query('today', 'today', metrics, dims_1, filters, sort, max)
-      rows_2 = query('today', 'today', metrics, dims_2, filters, sort, max)
-      rows_3 = query('today', 'today', metrics, dims_3, filters, sort, max)
-      if rows_1.nil? || rows_2.nil? || rows_3.nil?
+      rows = query('today', 'today', metrics, dims, filters, sort, max)
+      if rows.nil?
         return false
       end
 
@@ -83,49 +81,22 @@ class Reader < ActiveRecord::Base
       # as if it is in the local time where this app runs.
       now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
 
-      rows_1.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
-                        ENV['GA_UTC_OFFSET'])
-        path = remove_query(row[4])
-        reader = new(time: time, city: row[2], host: row[3], path: path,
-                     country: row[5], region: row[6], activity: activity,
-                     count: row[7])
-        reader.save
-      end
-
-      rows_2.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
-                        ENV['GA_UTC_OFFSET'])
-        path = remove_query(row[4])
-        existing = find_by(time: time, city: row[2], host: row[3],
-                           path: path, activity: activity)
-        if existing
-          existing.latitude = row[5]
-          existing.longitude = row[6]
-          existing.save
+      ActiveRecord::Base.transaction do
+        rows.each do |row|
+          time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
+                          ENV['GA_UTC_OFFSET'])
+          path = remove_query(row[6])
+          Reader.create(time: time,
+                        city: row[2], latitude: row[3], longitude: row[4],
+                        title: row[5], path: path,
+                        activity: activity, count: row[7])
         end
+
+        last_query = Timestamp.find_or_create_by(key: 'last_query')
+        last_query.time = now
+        last_query.save
       end
 
-      rows_3.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
-                        ENV['GA_UTC_OFFSET'])
-        path = remove_query(row[4])
-        existing = find_by(time: time, city: row[2], host: row[3],
-                           path: path, activity: activity)
-        if existing
-          existing.title = row[5]
-          existing.language = row[6]
-          existing.save
-        end
-      end
-
-      # Drop incomplete records.
-      where(latitude: nil).destroy_all
-      where(title: nil).destroy_all
-
-      last_query = Timestamp.find_or_create_by(key: 'last_query')
-      last_query.time = now
-      last_query.save
       true
     end
   
