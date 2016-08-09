@@ -10,8 +10,13 @@ class City < ActiveRecord::Base
     rows = query('today', 'today', metrics, dims, filters, sort, max)
     unless rows.nil?
       rows.each do |row|
-        City.create(city: row[0], latitude: row[1], longitude: row[2],
-                    region: row[3], country: row[4])
+        city = City.new(city: row[0], latitude: row[1], longitude: row[2],
+                        region: row[3], country: row[4])
+        begin
+          city.save
+        rescue ActiveRecord::RecordNotUnique
+          logger.debug("Skipping duplicate city: #{city}")
+        end
       end
     end
   end
