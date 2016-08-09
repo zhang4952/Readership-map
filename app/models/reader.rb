@@ -81,21 +81,19 @@ class Reader < ActiveRecord::Base
       # as if it is in the local time where this app runs.
       now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
 
-      ActiveRecord::Base.transaction do
-        rows.each do |row|
-          time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
-                          ENV['GA_UTC_OFFSET'])
-          path = remove_query(row[6])
-          Reader.create(time: time,
-                        city: row[2], latitude: row[3], longitude: row[4],
-                        title: row[5], path: path,
-                        activity: activity, count: row[7])
-        end
-
-        last_query = Timestamp.find_or_create_by(key: 'last_query')
-        last_query.time = now
-        last_query.save
+      rows.each do |row|
+        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
+                        ENV['GA_UTC_OFFSET'])
+        path = remove_query(row[6])
+        Reader.create(time: time,
+                      city: row[2], latitude: row[3], longitude: row[4],
+                      title: row[5], path: path,
+                      activity: activity, count: row[7])
       end
+
+      last_query = Timestamp.find_or_create_by(key: 'last_query')
+      last_query.time = now
+      last_query.save
 
       true
     end
