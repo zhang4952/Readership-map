@@ -59,12 +59,13 @@ class DataController < ApplicationController
       end
       
       rows.each do |row|
-        city = Location.new(city: row[0], latitude: row[1], longitude: row[2],
-                            region: row[3], country: row[4])
+        loc = Location.new(city: row[0], latitude: row[1], longitude: row[2],
+                           region: row[3], country: row[4])
         begin
-          city.save
+          loc.save
         rescue ActiveRecord::RecordNotUnique
-          logger.debug("Skipping duplicate city: #{city}")
+          logger.debug("Skipping duplicate location: " +
+            "#{loc.city}, #{loc.region}, #{loc.country}")
         end
       end
       
@@ -130,7 +131,8 @@ class DataController < ApplicationController
         begin
           reader.save
         rescue ActiveRecord::RecordNotUnique
-          logger.debug("Skipping duplicate reader: #{reader}")
+          logger.debug("Skipping duplicate reader: " +
+            "#{reader.time}, #{reader.city}, #{reader.title}")
         end
       end
       
