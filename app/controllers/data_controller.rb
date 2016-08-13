@@ -2,6 +2,7 @@ require 'google/apis/analytics_v3'
 
 class DataController < ApplicationController
 
+  # Readership data from the past 'minutes' minutes.
   def recent
     minutes = params[:minutes] ? params[:minutes].to_i : 60
     @result = recent_readers(minutes)
@@ -45,13 +46,13 @@ class DataController < ApplicationController
       { 'rows' => rows }
     end
     
-    # Get regions and countries for the cities in the readership data.
+    # Get regions and countries for cities in the readership data.
     def update_locations
       metrics = 'ga:pageviews,ga:totalEvents'
       dims = 'ga:city,ga:latitude,ga:longitude,ga:region,ga:country'
       filters = 'ga:city!=(not set)'
       sort = nil
-      max = 100000
+      max = 10000
       
       rows = query('today', 'today', metrics, dims, filters, sort, max)
       if rows.nil?
@@ -80,15 +81,6 @@ class DataController < ApplicationController
     
     # Get up-to-date 'view' (pageview) or 'download' data.
     def update_readers_for_activity(activity)
-      # A maximum of 7 dimensions can be used in each query,
-      # so we query multiple times using a set of dimensions,
-      # e.g. (hour, minute, city, pagePath), as a 'key' that
-      # guarantees the query results can be merged by simply
-      # matching the rows from each set of results. 
-      #
-      # The non-key dimensions must not be more specific
-      # than the key, so that there are not multiple
-      # rows returned with the same key.
       if activity == 'download'
         metrics = 'ga:totalEvents'
       else
@@ -96,20 +88,13 @@ class DataController < ApplicationController
       end
       dims = 'ga:hour,ga:minute,ga:city,ga:latitude,ga:longitude,'
       dims += 'ga:pageTitle,ga:pagePath'
-      
-      # Filter out records without location data.
       filters = 'ga:city!=(not set)'
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
         filters += ';ga:eventAction==Download'
       end
-      
-      # Get most recent records.
       sort = '-ga:hour,-ga:minute'
-      
-      # Set this so that the results definitely will
-      # go back far enough in time.
-      max = 100000
+      max = 10000
       
       rows = query('today', 'today', metrics, dims, filters, sort, max)
       if rows.nil?
@@ -143,9 +128,10 @@ class DataController < ApplicationController
       true
     end
     
-    # Query for Google Analytics data.
+    # Query for Google Analytics data. There can be at most 7 dimensions,
+    # and the 'max' number of results can be at most 10,000.
     def query(start_date, end_date, metrics, dimensions,
-                   filters, sort, max)
+              filters, sort, max)
       service = Google::Apis::AnalyticsV3::AnalyticsService.new
       service.authorization = Signet::OAuth2::Client.new(
         {

@@ -1,4 +1,4 @@
-/* rm.js - Readership Map Prototype */
+/* rm.js - Readership Map */
 
 var ReaderMap = (function() {
 
@@ -25,7 +25,6 @@ var queryTimer, displayTimer, displayOneTimer;
 /* Data and display stacks */
 var dataStack, displayStack;
 
-/* Call this when ready for map to go live */
 function start() {
   <% unless Rails.env.production? %>
   console.log("Starting");
@@ -57,7 +56,6 @@ function start() {
   query();
 }
 
-/* Initialize the map */
 function initMap() {
   var params = {
     center: { lat: 24, lng: 12 },
@@ -144,6 +142,7 @@ function initMap() {
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(clearControlDiv);
 }
 
+/* Constructor for "Clear map" button */
 function ClearControl(controlDiv, map) {
   var control = document.createElement("div");
   control.id = "clear";
@@ -155,6 +154,7 @@ function ClearControl(controlDiv, map) {
   });
 }
 
+/* Clear all markers */
 function clear() {
   for (var city in cities) {
     cities[city].setMap(null);
@@ -163,6 +163,7 @@ function clear() {
   startTime = new Date();
 }
 
+/* Get historical data to populate the map on startup */
 function populate() {
   <% unless Rails.env.production? %>
   console.log("Populating");
@@ -176,6 +177,7 @@ function populate() {
     });
 }
 
+/* How many minutes of historical data? */
 function minutesOfHistory() {
 /*
   var now = new Date();
@@ -217,6 +219,7 @@ function handlePopulateQuery(response) {
   <% end %>
 }
 
+/* Get most recent readership data */
 function query() {
   <% unless Rails.env.production? %>
   console.log("Querying");
@@ -270,6 +273,7 @@ function handleQueryResponse(response) {
   <% end %>
 }
 
+/* Display data based on virtual time */
 function display() {
   <% unless Rails.env.production? %>
   console.log("Displaying");
@@ -376,6 +380,8 @@ function addReaderToCity(reader, cityKey, animate) {
   }
 }
 
+/* Select marker (show info window) or unselect marker
+ * if it's already selected */
 function selectMarker(marker) {
   if (marker == markerSelected) {
     infoWindow.close();
@@ -389,6 +395,8 @@ function selectMarker(marker) {
   }
 }
 
+/* Highlight a marker (does not un-highlight if marker is
+ * already highlighted) */
 function highlightMarker(marker) {
   if (markerHighlighted && marker != markerHighlighted) {
     markerHighlighted.setZIndex(0);
@@ -414,7 +422,7 @@ function cityKey(reader) {
   return reader.city + ":" + reader.lat + "," + reader.lng;
 }
 
-/* Generate reader HTML corresponding to marker. */
+/* Generate reader HTML corresponding to marker */
 function cityInfoHtml(marker) {
   var infoHtml = "<h1>" + marker.rm_city + ", ";
   if (marker.rm_country == "United States") {
@@ -507,6 +515,7 @@ function cityInfoHtml(marker) {
   return infoHtml;
 }
 
+/* Create a reader object from an array of data */
 function readerFromRow(row) {
   return {
       time: new Date(Date.parse(row[0])),
@@ -522,6 +531,7 @@ function readerFromRow(row) {
     };
 }
 
+/* Should the reader be displayed at this time? */
 function readerShouldBeDisplayed(reader) {
   if (reader.time < dataStartTime || reader.time >= dataEndTime) {
     return false;
