@@ -464,7 +464,7 @@ function cityInfoHtml(marker) {
     } else {
       if (lastViewed.uri) {
         infoHtml += "<a href=\"http://" + lastViewed.uri + "\"" +
-          " alt=\"Untitled\" target=\"_blank\">";
+          " title=\"Untitled\" target=\"_blank\">";
       }
       infoHtml += "(Untitled)";
       if (lastViewed.uri) {
@@ -480,7 +480,7 @@ function cityInfoHtml(marker) {
     if (lastDownloaded.title) {
       if (lastDownloaded.uri) {
         infoHtml += "<a href=\"http://" + lastDownloaded.uri + "\"" +
-        " alt=\"" + lastDownloaded.title +
+        " title=\"" + lastDownloaded.title +
         "\" target=\"_blank\">";
       }
       if (lastDownloaded.title.length <= MAX_TITLE_LENGTH) {
@@ -495,7 +495,7 @@ function cityInfoHtml(marker) {
     } else {
       if (lastDownloaded.uri) {
         infoHtml += "<a href=\"http://" + lastDownloaded.uri + "\"" +
-          " alt=\"Untitled\" target=\"_blank\">";
+          " title=\"Untitled\" target=\"_blank\">";
       }
       infoHtml += "(Untitled)";
       if (lastDownloaded.uri) {
