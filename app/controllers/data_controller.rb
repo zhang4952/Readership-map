@@ -16,7 +16,7 @@ class DataController < ApplicationController
     # Get recent readership data as an array of arrays.
     def recent_readers(minutes)
       last_query = Timestamp.find_by(key: 'last_query')
-      if !last_query || Time.now - last_query.time > 10.minutes
+      if !last_query || last_query.time < 10.minutes.ago
         update_readers
         update_locations
       end
