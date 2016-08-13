@@ -1,6 +1,6 @@
-class CreateCities < ActiveRecord::Migration
+class CreateLocations < ActiveRecord::Migration
   def change
-    create_table :cities do |t|
+    create_table :locations do |t|
       t.string :city
       t.float :latitude
       t.float :longitude
@@ -9,6 +9,6 @@ class CreateCities < ActiveRecord::Migration
 
       t.timestamps null: false
     end
-    add_index :cities, [:city, :latitude, :longitude], unique: true
+    add_index :locations, [:city, :latitude, :longitude], unique: true
   end
 end

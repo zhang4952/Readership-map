@@ -13,7 +13,7 @@
 
 ActiveRecord::Schema.define(version: 20160808225624) do
 
-  create_table "cities", force: :cascade do |t|
+  create_table "locations", force: :cascade do |t|
     t.string   "city"
     t.float    "latitude"
     t.float    "longitude"
@@ -23,7 +23,7 @@ ActiveRecord::Schema.define(version: 20160808225624) do
     t.datetime "updated_at", null: false
   end
 
-  add_index "cities", ["city", "latitude", "longitude"], name: "index_cities_on_city_and_latitude_and_longitude", unique: true
+  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude", unique: true
 
   create_table "readers", force: :cascade do |t|
     t.datetime "time"

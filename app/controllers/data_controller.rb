@@ -18,7 +18,7 @@ class DataController < ApplicationController
       last_query = Timestamp.find_by(key: 'last_query')
       if !last_query || Time.now - last_query.time > 10.minutes
         update_readers
-        update_cities
+        update_locations
       end
       
       readers = Reader.where(time: minutes.minutes.ago..Time.now)
@@ -26,9 +26,9 @@ class DataController < ApplicationController
                 .to_a
       rows = []
       readers.each do |reader|
-        city = City.find_by(city: reader.city,
-                            latitude: reader.latitude,
-                            longitude: reader.longitude)
+        city = Location.find_by(city: reader.city,
+                                latitude: reader.latitude,
+                                longitude: reader.longitude)
         unless uri_excluded?(reader.path)
           rows.push([reader.time.iso8601,
                      city.country,
@@ -46,7 +46,7 @@ class DataController < ApplicationController
     end
     
     # Get regions and countries for the cities in the readership data.
-    def update_cities
+    def update_locations
       metrics = 'ga:pageviews,ga:totalEvents'
       dims = 'ga:city,ga:latitude,ga:longitude,ga:region,ga:country'
       filters = 'ga:city!=(not set)'
@@ -59,8 +59,8 @@ class DataController < ApplicationController
       end
       
       rows.each do |row|
-        city = City.new(city: row[0], latitude: row[1], longitude: row[2],
-                        region: row[3], country: row[4])
+        city = Location.new(city: row[0], latitude: row[1], longitude: row[2],
+                            region: row[3], country: row[4])
         begin
           city.save
         rescue ActiveRecord::RecordNotUnique
