@@ -21,7 +21,7 @@ class DataController < ApplicationController
         update_locations
         update_readers
         unless last_query
-          last_query.time = Timestamp.new(key: 'last_query')
+          last_query = Timestamp.new(key: 'last_query')
         end
         last_query.time = Time.now
         last_query.save
