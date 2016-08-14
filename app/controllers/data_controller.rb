@@ -23,8 +23,7 @@ class DataController < ApplicationController
       end
       
       readers = Reader.where(time: minutes.minutes.ago..Time.now)
-                .order(time: :desc)
-                .to_a
+                      .order(time: :desc).to_a
       rows = []
       readers.each do |reader|
         city = Location.find_by(city: reader.city,
@@ -59,15 +58,10 @@ class DataController < ApplicationController
         return false
       end
       
+      Location.delete_all
       rows.each do |row|
-        loc = Location.new(city: row[0], latitude: row[1], longitude: row[2],
-                           region: row[3], country: row[4])
-        begin
-          loc.save
-        rescue ActiveRecord::RecordNotUnique
-          logger.debug("Skipping duplicate location: " +
-            "#{loc.city}, #{loc.region}, #{loc.country}")
-        end
+        Location.create(city: row[0], latitude: row[1], longitude: row[2],
+                        region: row[3], country: row[4])
       end
       
       true
@@ -105,19 +99,33 @@ class DataController < ApplicationController
       # as if it is in the local time where this app runs.
       now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
       
+      Reader.where(activity: activity).delete_all
       rows.each do |row|
         time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
                         ENV['GA_UTC_OFFSET'])
         path = remove_query(row[6])
-        reader = Reader.new(time: time,
-                            city: row[2], latitude: row[3], longitude: row[4],
-                            title: row[5], path: path,
-                            activity: activity, count: row[7])
-        begin
-          reader.save
-        rescue ActiveRecord::RecordNotUnique
-          logger.debug("Skipping duplicate reader: " +
-            "#{reader.time}, #{reader.city}, #{reader.title}")
+        Reader.create(time: time,
+                      city: row[2], latitude: row[3], longitude: row[4],
+                      title: row[5], path: path,
+                      activity: activity, count: row[7])
+      end
+      
+      # If it's just after midnight in the timezone of the
+      # Google Analytics profile, get yesterday's data also.
+      if now < now.at_midnight + 1.hour
+        yesterday_rows = query('yesterday', 'yesterday', metrics, dims,
+                               filters, sort, max)
+        unless yesterday_rows.nil?
+          day_ago = now - 1.day
+          yesterday_rows.each do |row|
+            time = Time.new(day_ago.year, day_ago.month, day_ago.day,
+                            row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
+            path = remove_query(row[6])
+            Reader.create(time: time,
+                          city: row[2], latitude: row[3], longitude: row[4],
+                          title: row[5], path: path,
+                          activity: activity, count: row[7])
+          end
         end
       end
       

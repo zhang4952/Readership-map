@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160808225624) do
+ActiveRecord::Schema.define(version: 20160813204950) do
 
   create_table "locations", force: :cascade do |t|
     t.string   "city"
@@ -23,7 +23,7 @@ ActiveRecord::Schema.define(version: 20160808225624) do
     t.datetime "updated_at", null: false
   end
 
-  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude", unique: true
+  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude"
 
   create_table "readers", force: :cascade do |t|
     t.datetime "time"
@@ -38,7 +38,6 @@ ActiveRecord::Schema.define(version: 20160808225624) do
     t.datetime "updated_at", null: false
   end
 
-  add_index "readers", ["time", "latitude", "longitude", "path", "activity"], name: "readers_uniqueness_index", unique: true
   add_index "readers", ["time"], name: "index_readers_on_time"
 
   create_table "timestamps", force: :cascade do |t|
