@@ -100,15 +100,7 @@ class DataController < ApplicationController
       now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
       
       Reader.where(activity: activity).delete_all
-      rows.each do |row|
-        time = Time.new(now.year, now.month, now.day, row[0], row[1], 0,
-                        ENV['GA_UTC_OFFSET'])
-        path = remove_query(row[6])
-        Reader.create(time: time,
-                      city: row[2], latitude: row[3], longitude: row[4],
-                      title: row[5], path: path,
-                      activity: activity, count: row[7])
-      end
+      save_reader_rows(rows, now, activity)
       
       # If it's just after midnight in the timezone of the
       # Google Analytics profile, get yesterday's data also.
@@ -117,15 +109,7 @@ class DataController < ApplicationController
                                filters, sort, max)
         unless yesterday_rows.nil?
           day_ago = now - 1.day
-          yesterday_rows.each do |row|
-            time = Time.new(day_ago.year, day_ago.month, day_ago.day,
-                            row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
-            path = remove_query(row[6])
-            Reader.create(time: time,
-                          city: row[2], latitude: row[3], longitude: row[4],
-                          title: row[5], path: path,
-                          activity: activity, count: row[7])
-          end
+          save_reader_rows(yesterday_rows, day_ago, activity)
         end
       end
       
@@ -134,6 +118,19 @@ class DataController < ApplicationController
       last_query.save
       
       true
+    end
+    
+    # Save rows of reader data in database.
+    def save_reader_rows(rows, ref_time, activity)
+      rows.each do |row|
+        time = Time.new(ref_time.year, ref_time.month, ref_time.day,
+                        row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
+        path = remove_query(row[6])
+        Reader.create(time: time,
+                      city: row[2], latitude: row[3], longitude: row[4],
+                      title: row[5], path: path,
+                      activity: activity, count: row[7])
+      end
     end
     
     # Query for Google Analytics data. There can be at most 7 dimensions,
