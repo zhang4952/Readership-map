@@ -11,27 +11,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160813204950) do
+ActiveRecord::Schema.define(version: 20160814005809) do
 
   create_table "locations", force: :cascade do |t|
+    t.string   "country"
+    t.string   "region"
     t.string   "city"
     t.float    "latitude"
     t.float    "longitude"
-    t.string   "region"
-    t.string   "country"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude"
+  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude", unique: true
 
   create_table "readers", force: :cascade do |t|
     t.datetime "time"
+    t.string   "country"
+    t.string   "region"
     t.string   "city"
     t.float    "latitude"
     t.float    "longitude"
     t.string   "title"
-    t.string   "path"
+    t.string   "uri"
     t.string   "activity"
     t.integer  "count"
     t.datetime "created_at", null: false

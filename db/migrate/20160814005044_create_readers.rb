@@ -8,15 +8,13 @@ class CreateReaders < ActiveRecord::Migration
       t.float :latitude
       t.float :longitude
       t.string :title
-      t.string :host
-      t.string :path
-      t.string :language
+      t.string :uri
       t.string :activity
       t.integer :count
 
       t.timestamps null: false
     end
-    add_index :readers, :time
-    add_index :readers, [:time, :host, :path, :city, :activity], unique: true
+    
+    add_index(:readers, :time)
   end
 end

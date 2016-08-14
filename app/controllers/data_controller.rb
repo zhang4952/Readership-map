@@ -18,26 +18,28 @@ class DataController < ApplicationController
     def recent_readers(minutes)
       last_query = Timestamp.find_by(key: 'last_query')
       if !last_query || last_query.time < 10.minutes.ago
-        update_readers
         update_locations
+        update_readers
+        unless last_query
+          last_query.time = Timestamp.new(key: 'last_query')
+        end
+        last_query.time = Time.now
+        last_query.save
       end
       
       readers = Reader.where(time: minutes.minutes.ago..Time.now)
                       .order(time: :desc).to_a
       rows = []
       readers.each do |reader|
-        city = Location.find_by(city: reader.city,
-                                latitude: reader.latitude,
-                                longitude: reader.longitude)
-        unless uri_excluded?(reader.path)
+        unless uri_excluded?(reader.uri)
           rows.push([reader.time.iso8601,
-                     city.country,
-                     city.region,
+                     reader.country,
+                     reader.region,
                      reader.city,
                      reader.latitude,
                      reader.longitude,
                      reader.title,
-                     ENV['URI_HOST'] + reader.path,
+                     reader.uri,
                      reader.activity,
                      reader.count])
         end
@@ -48,7 +50,7 @@ class DataController < ApplicationController
     # Get regions and countries for cities in the readership data.
     def update_locations
       metrics = 'ga:pageviews,ga:totalEvents'
-      dims = 'ga:city,ga:latitude,ga:longitude,ga:region,ga:country'
+      dims = 'ga:country,ga:region,ga:city,ga:latitude,ga:longitude'
       filters = 'ga:city!=(not set)'
       sort = nil
       max = 10000
@@ -58,13 +60,13 @@ class DataController < ApplicationController
         return false
       end
       
-      Location.delete_all
       rows.each do |row|
-        Location.create(city: row[0], latitude: row[1], longitude: row[2],
-                        region: row[3], country: row[4])
+        unless Location.exists?(city: row[2], latitude: row[3],
+                                longitude: row[4])
+          Location.create(country: row[0], region: row[1], city: row[2],
+                          latitude: row[3], longitude: row[4])
+        end
       end
-      
-      true
     end
     
     # Update database with most recent readership data.
@@ -113,10 +115,6 @@ class DataController < ApplicationController
         end
       end
       
-      last_query = Timestamp.find_or_create_by(key: 'last_query')
-      last_query.time = now
-      last_query.save
-      
       true
     end
     
@@ -125,10 +123,14 @@ class DataController < ApplicationController
       rows.each do |row|
         time = Time.new(ref_time.year, ref_time.month, ref_time.day,
                         row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
+        loc = Location.find_by(city: row[2], latitude: row[3],
+                               longitude: row[4])
         path = remove_query(row[6])
         Reader.create(time: time,
+                      country: loc ? loc.country : nil,
+                      region: loc ? loc.region : nil,
                       city: row[2], latitude: row[3], longitude: row[4],
-                      title: row[5], path: path,
+                      title: row[5], uri: ENV['URI_HOST'] + path,
                       activity: activity, count: row[7])
       end
     end
