@@ -50,7 +50,7 @@ class DataController < ApplicationController
     # Get regions and countries for cities in the readership data.
     def update_locations
       metrics = 'ga:pageviews,ga:totalEvents'
-      dims = 'ga:country,ga:region,ga:city,ga:latitude,ga:longitude'
+      dims = 'ga:cityId,ga:country,ga:region,ga:city,ga:latitude,ga:longitude'
       filters = 'ga:city!=(not set)'
       sort = nil
       max = 10000
@@ -61,11 +61,13 @@ class DataController < ApplicationController
       end
       
       rows.each do |row|
-        unless Location.exists?(city: row[2], latitude: row[3],
-                                longitude: row[4])
-          Location.create(country: row[0], region: row[1], city: row[2],
-                          latitude: row[3], longitude: row[4])
-        end
+        loc = Location.find_or_create_by(cityId: row[0])
+        loc.country = (row[1] != '(not set)') ? row[1] : nil
+        loc.region = (row[2] != '(not set)') ? row[2] : nil
+        loc.city = row[3]
+        loc.latitude = row[4]
+        loc.longitude = row[5]
+        loc.save
       end
     end
     
@@ -82,9 +84,8 @@ class DataController < ApplicationController
       else
         metrics = 'ga:pageviews'
       end
-      dims = 'ga:hour,ga:minute,ga:city,ga:latitude,ga:longitude,'
-      dims += 'ga:pageTitle,ga:pagePath'
-      filters = 'ga:city!=(not set)'
+      dims = 'ga:hour,ga:minute,ga:cityId,ga:pageTitle,ga:hostName,ga:pagePath'
+      filters = 'ga:cityId!=(not set)'
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
         filters += ';ga:eventAction==Download'
@@ -123,15 +124,18 @@ class DataController < ApplicationController
       rows.each do |row|
         time = Time.new(ref_time.year, ref_time.month, ref_time.day,
                         row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
-        loc = Location.find_by(city: row[2], latitude: row[3],
-                               longitude: row[4])
-        path = remove_query(row[6])
+        loc = Location.find_by(cityId: row[2])
+        path = remove_query(row[5])
         Reader.create(time: time,
                       country: loc ? loc.country : nil,
                       region: loc ? loc.region : nil,
-                      city: row[2], latitude: row[3], longitude: row[4],
-                      title: row[5], uri: ENV['URI_HOST'] + path,
-                      activity: activity, count: row[7])
+                      city: loc ? loc.city : nil,
+                      latitude: loc ? loc.latitude : nil,
+                      longitude: loc ? loc.longitude : nil,
+                      title: row[3],
+                      uri: row[4] + path,
+                      activity: activity,
+                      count: row[6])
       end
     end
     
