@@ -7,7 +7,7 @@ class CreateReaders < ActiveRecord::Migration
       t.string :city
       t.float :latitude
       t.float :longitude
-      t.string :title
+      t.text :title
       t.string :uri
       t.string :activity
       t.integer :count

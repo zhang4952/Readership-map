@@ -33,7 +33,7 @@ ActiveRecord::Schema.define(version: 20160814005809) do
     t.string   "city"
     t.float    "latitude"
     t.float    "longitude"
-    t.string   "title"
+    t.text     "title"
     t.string   "uri"
     t.string   "activity"
     t.integer  "count"
