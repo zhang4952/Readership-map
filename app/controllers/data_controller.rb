@@ -126,17 +126,19 @@ class DataController < ApplicationController
         time = Time.new(ref_time.year, ref_time.month, ref_time.day,
                         row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
         loc = Location.find_by(cityId: row[2])
-        path = remove_query(row[5])
-        Reader.create(time: time,
-                      country: loc ? loc.country : nil,
-                      region: loc ? loc.region : nil,
-                      city: loc ? loc.city : nil,
-                      latitude: loc ? loc.latitude : nil,
-                      longitude: loc ? loc.longitude : nil,
-                      title: row[3],
-                      uri: row[4] + path,
-                      activity: activity,
-                      count: row[6])
+        unless loc.nil?
+          path = remove_query(row[5])
+          Reader.create(time: time,
+                        country: loc.country,
+                        region: loc.region,
+                        city: loc.city,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        title: row[3],
+                        uri: row[4] + path,
+                        activity: activity,
+                        count: row[6])
+        end
       end
     end
     
