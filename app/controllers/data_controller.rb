@@ -31,18 +31,16 @@ class DataController < ApplicationController
                       .order(time: :desc).to_a
       rows = []
       readers.each do |reader|
-        unless uri_excluded?(reader.uri)
-          rows.push([reader.time.iso8601,
-                     reader.country,
-                     reader.region,
-                     reader.city,
-                     reader.latitude,
-                     reader.longitude,
-                     reader.title,
-                     reader.uri,
-                     reader.activity,
-                     reader.count])
-        end
+        rows.push([reader.time.iso8601,
+                   reader.country,
+                   reader.region,
+                   reader.city,
+                   reader.latitude,
+                   reader.longitude,
+                   reader.title,
+                   reader.uri,
+                   reader.activity,
+                   reader.count])
       end
       { 'rows' => rows }
     end
@@ -85,7 +83,8 @@ class DataController < ApplicationController
         metrics = 'ga:pageviews'
       end
       dims = 'ga:hour,ga:minute,ga:cityId,ga:pageTitle,ga:hostName,ga:pagePath'
-      filters = 'ga:cityId!=(not set)'
+      filters = ENV['GA_FILTERS']
+      filters += ';ga:cityId!=(not set)'
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
         filters += ';ga:eventAction==Download'
