@@ -187,16 +187,4 @@ class DataController < ApplicationController
       end
       path
     end
-    
-    # Determine whether URI should be excluded.
-    def uri_excluded?(uri)
-      excluded_uris = ENV['EXCLUDED_URIS'] ?
-        ENV['EXCLUDED_URIS'].split(';') : []
-      excluded_uris.each do |pattern|
-        if /#{pattern}/ =~ uri
-          return true
-        end
-      end
-      false
-    end
 end
