@@ -83,8 +83,10 @@ class DataController < ApplicationController
         metrics = 'ga:pageviews'
       end
       dims = 'ga:hour,ga:minute,ga:cityId,ga:pageTitle,ga:hostName,ga:pagePath'
-      filters = ENV['GA_FILTERS']
-      filters += ';ga:cityId!=(not set)'
+      filters = 'ga:cityId!=(not set)'
+      if ENV['GA_FILTERS']
+        filters += ';' + ENV['GA_FILTERS']
+      end
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
         filters += ';ga:eventAction==Download'
