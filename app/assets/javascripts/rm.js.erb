@@ -10,20 +10,35 @@ var startTime;
 var dataStartTime, dataEndTime;
 var virtualTime, lastDisplayTime;
 
-/* Timing parameters */
-var QUERY_DELAY = 1200000; /* milliseconds */
-var QUERY_INTERVAL = 600000;
-var DISPLAY_INTERVAL = 60000;
-var MARKER_EXPIRATION = 1800000;
-
-/* Info text parameters */
-var MAX_TITLE_LENGTH = 75;
-
 /* Interval timers */
 var queryTimer, displayTimer, displayOneTimer;
 
 /* Data and display stacks */
 var dataStack, displayStack;
+
+function queryDelay() {
+  return <%= ENV['RM_QUERY_DELAY'] ? ENV['RM_QUERY_DELAY'].to_i : 20 %>;
+}
+
+function queryInterval() {
+  return <%= ENV['RM_QUERY_INTERVAL'] ? ENV['RM_QUERY_INTERVAL'].to_i : 10 %>;
+}
+
+function displayInterval() {
+  return <%= ENV['RM_DISPLAY_INTERVAL'] ? ENV['RM_DISPLAY_INTERVAL'].to_i : 1 %>;
+}
+
+function initialHistory() {
+  return <%= ENV['RM_INITIAL_HISTORY'] ? ENV['RM_INITIAL_HISTORY'].to_i : 60 %>;
+}
+
+function maxTitleLength() {
+  return <%= ENV['RM_MAX_TITLE_LENGTH'] ? ENV['RM_MAX_TITLE_LENGTH'].to_i : 80 %>;
+}
+
+function minToMs(minutes) {
+  return minutes * 60 * 1000;
+}
 
 function start() {
   <% unless Rails.env.production? %>
@@ -34,17 +49,16 @@ function start() {
   /* Initialize */
   initMap();
   startTime = new Date();
-  startTime.setMinutes(startTime.getMinutes() - minutesOfHistory());
+  startTime.setMinutes(startTime.getMinutes() - initialHistory());
   dataStartTime = new Date();
-  dataStartTime.setSeconds(0, 0);
-  dataStartTime.setMilliseconds(dataStartTime.getMilliseconds() -
-                                QUERY_DELAY -
-                                QUERY_INTERVAL);
+  dataStartTime.setMinutes(dataStartTime.getMinutes() -
+                           queryDelay() - queryInterval(),
+                           0, 0);
   dataEndTime = new Date(dataStartTime.getTime());
   virtualTime = new Date(dataStartTime.getTime());
   lastDisplayTime = new Date();
-  queryTimer = setInterval(query, QUERY_INTERVAL);
-  displayTimer = setInterval(display, DISPLAY_INTERVAL);
+  queryTimer = setInterval(query, minToMs(queryInterval()));
+  displayTimer = setInterval(display, minToMs(displayInterval()));
   displayOneTimer = null;
   dataStack = [];
   displayStack = [];
@@ -171,21 +185,10 @@ function populate() {
   <% end %>
 
   $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
-      ".json?minutes=" + minutesOfHistory(),
+      ".json?minutes=" + initialHistory(),
     function(data) {
       handlePopulateQuery(data);
     });
-}
-
-/* How many minutes of historical data? */
-function minutesOfHistory() {
-/*
-  var now = new Date();
-  var midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
-                          0, 0, 0);
-  return parseInt((now.getTime() - midnight.getTime()) / 60000);
-*/
-  return 60;
 }
 
 function handlePopulateQuery(response) {
@@ -209,7 +212,7 @@ function handlePopulateQuery(response) {
     if (!response) {
       console.log("Populate query response null");
     } else if (response.error) {
-      console.log("Populate query error: " + response.error.message);
+      console.log("Populate query error");
     } else if (!response.rows) {
       console.log("Populate query response has no rows member");
     } else if (response.rows.length <= 0) {
@@ -228,10 +231,10 @@ function query() {
 
   dataStartTime = dataEndTime;
   dataEndTime = new Date();
-  dataEndTime.setMilliseconds(dataEndTime.getMilliseconds() -
-                              QUERY_DELAY);
+  dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay());
+  var minutes = queryDelay() + queryInterval() + 10;
   $.get("<%= Rails.application.routes.url_helpers.recent_data_path %>" +
-      ".json?minutes=" + 60,
+      ".json?minutes=" + minutes,
     function(data) {
       handleQueryResponse(data);
     });
@@ -263,7 +266,7 @@ function handleQueryResponse(response) {
     if (!response) {
       console.log("Data query response null");
     } else if (response.error) {
-      console.log("Data query error: " + response.error.message);
+      console.log("Data query error");
     } else if (!response.rows) {
       console.log("Data query response has no rows member");
     } else if (response.rows.length <= 0) {
@@ -305,7 +308,7 @@ function display() {
      * evenly over the display interval */
     if (displayStack.length > 1) {
       displayOneTimer = setInterval(displayOne,
-        DISPLAY_INTERVAL / displayStack.length);
+        minToMs(displayInterval()) / displayStack.length);
     }
     displayOne();
   }
@@ -460,10 +463,10 @@ function cityInfoHtml(marker) {
         " title=\"" + lastViewed.title +
         "\" target=\"_blank\">";
       }
-      if (lastViewed.title.length <= MAX_TITLE_LENGTH) {
+      if (lastViewed.title.length <= maxTitleLength()) {
         infoHtml += lastViewed.title;
       } else {
-        infoHtml += lastViewed.title.substring(0, MAX_TITLE_LENGTH - 1) +
+        infoHtml += lastViewed.title.substring(0, maxTitleLength() - 1) +
           "&hellip;";
       }
       if (lastViewed.uri) {
@@ -491,10 +494,10 @@ function cityInfoHtml(marker) {
         " title=\"" + lastDownloaded.title +
         "\" target=\"_blank\">";
       }
-      if (lastDownloaded.title.length <= MAX_TITLE_LENGTH) {
+      if (lastDownloaded.title.length <= maxTitleLength()) {
         infoHtml += lastDownloaded.title;
       } else {
-        infoHtml += lastDownloaded.title.substring(0, MAX_TITLE_LENGTH - 1) +
+        infoHtml += lastDownloaded.title.substring(0, maxTitleLength() - 1) +
           "&hellip;";
       }
       if (lastDownloaded.uri) {
