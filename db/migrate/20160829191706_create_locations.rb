@@ -10,7 +10,6 @@ class CreateLocations < ActiveRecord::Migration
 
       t.timestamps null: false
     end
-    
-    add_index(:locations, [:city, :latitude, :longitude], unique: true)
+    add_index :locations, :cityId, unique: true
   end
 end
