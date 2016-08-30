@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160817183046) do
+ActiveRecord::Schema.define(version: 20160829191851) do
 
   create_table "locations", force: :cascade do |t|
     t.string   "cityId"
@@ -24,7 +24,7 @@ ActiveRecord::Schema.define(version: 20160817183046) do
     t.datetime "updated_at", null: false
   end
 
-  add_index "locations", ["city", "latitude", "longitude"], name: "index_locations_on_city_and_latitude_and_longitude", unique: true
+  add_index "locations", ["cityId"], name: "index_locations_on_cityId", unique: true
 
   create_table "readers", force: :cascade do |t|
     t.datetime "time"
@@ -34,7 +34,7 @@ ActiveRecord::Schema.define(version: 20160817183046) do
     t.float    "latitude"
     t.float    "longitude"
     t.text     "title"
-    t.string   "uri"
+    t.text     "uri"
     t.string   "activity"
     t.integer  "count"
     t.datetime "created_at", null: false
