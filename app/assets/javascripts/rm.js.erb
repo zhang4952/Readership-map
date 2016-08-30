@@ -295,7 +295,7 @@ function markOnMap(reader, animate) {
         animation: null,
         icon: markerPath(),
         opacity: 1.0,
-        zIndex: 0,
+        zIndex: 90 - reader.lat,
         rm_country: reader.country,
         rm_region: reader.region,
         rm_city: reader.city,
@@ -349,7 +349,6 @@ function selectMarker(marker) {
   if (marker != markerSelected) {
     infoWindow.setContent(cityInfoHtml(marker));
     infoWindow.open(map, marker);
-    marker.setZIndex(2);
     markerSelected = marker;
   }
 }
@@ -358,7 +357,6 @@ function selectMarker(marker) {
 function unselectMarker(marker) {
   if (marker == markerSelected) {
     infoWindow.close();
-    marker.setZIndex(0);
     markerSelected = null;
   }
 }
@@ -366,11 +364,9 @@ function unselectMarker(marker) {
 /* Highlight a marker by giving it a modified icon */
 function highlightMarker(marker) {
   if (markerHighlighted && marker != markerHighlighted) {
-    markerHighlighted.setZIndex(0);
     markerHighlighted.setIcon(markerPath());
   }
   if (marker != markerHighlighted) {
-    marker.setZIndex(1);
     marker.setIcon(markerHighlightedPath());
     markerHighlighted = marker;
   }
