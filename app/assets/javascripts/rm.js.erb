@@ -126,22 +126,21 @@ function initializeMap() {
       unselectMarker(markerSelected);
     });
   cities = {};
-
-  var clearControlDiv = document.createElement('div');
-  var clearControl = new ClearControl(clearControlDiv, map);
-  map.controls[google.maps.ControlPosition.TOP_RIGHT].push(clearControlDiv);
+  createClearButton();
 }
 
-/* Constructor for "Clear map" button */
-function ClearControl(controlDiv, map) {
+/* Create button for clearing map */
+function createClearButton() {
+  var clearControlDiv = document.createElement("div");
   var control = document.createElement("div");
   control.id = "clear";
   control.title = "Clear the map";
   control.innerHTML = "Clear map";
-  controlDiv.appendChild(control);
+  clearControlDiv.appendChild(control);
   control.addEventListener("click", function() {
-    clear();
-  });
+      clear();
+    });
+  map.controls[google.maps.ControlPosition.TOP_RIGHT].push(clearControlDiv);
 }
 
 /* Clear all markers */
