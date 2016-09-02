@@ -8,14 +8,35 @@ html, body, div {
   margin: 0;
 }
 
-#map {
+#map-wrapper {
   width: 1024px;
-  height: 512px;
   margin: 0 auto 0 auto;
+}
+
+#map-header {
+  padding: 8px;
+  background-color: #C34500;
+  color: #FFFFFF;
+  font-family: Gudea, sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+#map-footer {
+  padding: 8px;
+  background-color: #C34500;
+  color: #FFFFFF;
+  font-family: Gudea, sans-serif;
+  font-size: 12px;
+  text-align: center;
+}
+
+#map {
+  height: 512px;
 
   // Style Google Map InfoWindow
   div.gm-style-iw {
-    color: #555555;
+    color: #373737;
     font-family: Gudea, sans-serif;
 
     h1 {

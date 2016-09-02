@@ -1,3 +1,7 @@
-<div id="map"></div>
-<%= javascript_include_tag "rm.js" %>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=ReaderMap.start"></script>
+<div id="map-wrapper">
+  <div id="map-header"><%= ENV['RM_HEADER_TEXT'] || 'Readership Map' %></div>
+  <div id="map"></div>
+  <div id="map-footer"><%= ENV['RM_FOOTER_TEXT'] || 'Click a marker to see readership info' %></div>
+  <%= javascript_include_tag "rm.js" %>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=ReaderMap.start"></script>
+</div>
