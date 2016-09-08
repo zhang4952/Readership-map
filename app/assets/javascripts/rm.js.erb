@@ -146,15 +146,13 @@ function createClearButton() {
 
 /* Insert "Last update" timestamp into footer */
 function insertLastUpdate() {
-  var footer = document.getElementById("map-footer");
-  if (!footer) {
-    return false;
+  var lastUpdated = "<%= ENV['RM_LAST_UPDATED'] %>";
+  if (lastUpdated) {
+    var footer = document.getElementById("map-footer");
+    if (footer && footer.innerHTML && footer.innerHTML.trim().length > 0) {
+      footer.innerHTML += " &mdash; Last updated " + lastUpdated;
+    }
   }
-  var lastUpdated = new Date(document.lastModified);
-  if (footer.innerHTML && footer.innerHTML.trim().length > 0) {
-    footer.innerHTML += " &mdash; ";
-  }
-  footer.innerHTML += "Last update: " + lastUpdated.toDateString();
 }
 
 /* Clear all markers */
