@@ -1,7 +1,19 @@
 <div id="map-wrapper">
   <div id="map-header"><%= ENV['RM_HEADER_TEXT'] || 'Readership Map' %></div>
   <div id="map"></div>
-  <div id="map-footer"><%= ENV['RM_FOOTER_TEXT'] || 'Click a marker to see readership info' %></div>
+  <div id="map-footer">
+  <%=
+    if ENV['RM_FOOTER_TEXT'] && ENV['RM_LAST_UPDATED']
+      ENV['RM_FOOTER_TEXT'] + ' — Last updated ' + ENV['RM_LAST_UPDATED']
+    elsif ENV['RM_FOOTER_TEXT']
+      ENV['RM_FOOTER_TEXT']
+    elsif ENV['RM_LAST_UPDATED']
+      'Last updated ' + ENV['RM_LAST_UPDATED']
+    else
+      'Click a marker to see readership info'
+    end
+  %>
+  </div>
   <%= javascript_include_tag "rm.js" %>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDWcF_5wWBSVM5pPshPeSAoFJxgWsyXl1w&callback=ReaderMap.start"></script>
 </div>

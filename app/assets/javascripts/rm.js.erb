@@ -127,7 +127,6 @@ function initializeMap() {
     });
   cities = {};
   createClearButton();
-  insertLastUpdate();
 }
 
 /* Create button for clearing map */
@@ -142,17 +141,6 @@ function createClearButton() {
       clear();
     });
   map.controls[google.maps.ControlPosition.TOP_RIGHT].push(clearControlDiv);
-}
-
-/* Insert "Last update" timestamp into footer */
-function insertLastUpdate() {
-  var lastUpdated = "<%= ENV['RM_LAST_UPDATED'] %>";
-  if (lastUpdated) {
-    var footer = document.getElementById("map-footer");
-    if (footer && footer.innerHTML && footer.innerHTML.trim().length > 0) {
-      footer.innerHTML += " &mdash; Last updated " + lastUpdated;
-    }
-  }
 }
 
 /* Clear all markers */
