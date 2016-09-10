@@ -5,7 +5,12 @@ class DataController < ApplicationController
   # Readership data from the past 'minutes' minutes.
   def recent
     minutes = params[:minutes] ? params[:minutes].to_i : 60
-    @result = recent_readers(minutes)
+    if configured?
+      @result = recent_readers(minutes)
+    else
+      @result = { 'error' => 'The application is not properly configured.' }
+      logger.error('Cannot retrieve data: A required configuration variable has not been set.')
+    end
     respond_to do |format|
       format.html
       format.json { render :json => @result }
@@ -14,6 +19,11 @@ class DataController < ApplicationController
   
   private
   
+    # Check for the necessary configuration variables.
+    def configured?
+      ENV['GA_PROFILE_ID'] && ENV['GSA_CLIENT_EMAIL'] && ENV['GSA_PRIVATE_KEY']
+    end
+    
     # Get recent readership data as an array of arrays.
     def recent_readers(minutes)
       last_query = Timestamp.find_by(key: 'last_query')

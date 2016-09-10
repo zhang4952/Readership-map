@@ -210,7 +210,7 @@ function handleQueryResponse(response, withHistory) {
     if (!response) {
       console.log("Data query response null");
     } else if (response.error) {
-      console.log("Data query error");
+      console.log("Data query error: " + response.error);
     } else if (!response.rows) {
       console.log("Data query response has no rows member");
     } else if (response.rows.length <= 0) {
