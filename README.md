@@ -2,7 +2,7 @@
 
 ## Setup
 
-Four environment variables must be set:
+Three environment variables must be set:
 
 * `GA_PROFILE_ID` - the Google Analytics profile ID ('ga:XXXXXXXX')
 * `GSA_CLIENT_EMAIL` - the client email for the Google service account
@@ -11,7 +11,7 @@ Four environment variables must be set:
 The `GSA_...` fields can be copied from a Google service account
 credentials JSON file downloaded from the Developer Console.
 The variables can be set either outside the application or in an
-**application.yml** file placed in the **config/** directory.
+**application.yml** file placed in the **/config** directory.
 The file should contain the lines
 
 ```
