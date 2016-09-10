@@ -160,6 +160,11 @@ function query(history) {
   logState();
   <% end %>
 
+  /* If history > 0, assume this is the initial query
+     and show "Loading" in the header */
+  if (history) {
+    document.getElementById("map-header").innerHTML = "Loading&hellip;";
+  }
   dataStartTime = dataEndTime;
   dataEndTime = new Date();
   dataEndTime.setMinutes(dataEndTime.getMinutes() - queryDelay());
@@ -177,6 +182,12 @@ function handleQueryResponse(response, withHistory) {
   logState();
   <% end %>
 
+  /* If history > 0, assume this is the initial query
+     and replace "Loading" with the actual header */
+  if (withHistory) {
+    document.getElementById("map-header").innerHTML =
+      "<%= ENV['RM_HEADER_TEXT'] || 'Readership Map' %>";
+  }
   if (response && !response.error &&
       response.rows && response.rows.length > 0) {
 
