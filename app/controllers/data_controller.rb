@@ -109,9 +109,8 @@ class DataController < ApplicationController
         return false
       end
       
-      # If GA_UTC_OFFSET is not set, treats time in the GA data
-      # as if it is in the local time where this app runs.
-      now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
+      # Should be the time now in the time zone associated with the GA data.
+      now = Time.now.in_time_zone(ENV['GA_TIME_ZONE'] || 'America/Los_Angeles')
       
       Reader.where(activity: activity).delete_all
       save_reader_rows(rows, now, activity)
@@ -134,7 +133,7 @@ class DataController < ApplicationController
     def save_reader_rows(rows, ref_time, activity)
       rows.each do |row|
         time = Time.new(ref_time.year, ref_time.month, ref_time.day,
-                        row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
+                        row[0], row[1], 0, ref_time.utc_offset)
         loc = Location.find_by(cityId: row[2])
         unless loc.nil?
           path = remove_query(row[5])

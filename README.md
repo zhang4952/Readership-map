@@ -25,9 +25,9 @@ also needs to be set with a secret token for the Rails app.
 
 There are several optional configuration variables:
 
-* `GA_UTC_OFFSET` - the offset from UTC for the time zone that is used
-                    for the Google Analytics data, e.g. '-08:00' for PST
-                    ('-07:00' during daylight savings!)
+* `GA_TIME_ZONE` - the time zone associated with the Google Analytics data
+                   in the form of a region name (default is
+                   'America/Los_Angeles')
 * `GA_FILTERS` - filters to be applied to the path part of URIs when
                  querying Google Analytics (see the [documentation](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters))
 * `RM_QUERY_INTERVAL` - minutes between queries by the map for new data
