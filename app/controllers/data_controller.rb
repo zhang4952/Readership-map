@@ -5,7 +5,12 @@ class DataController < ApplicationController
   # Readership data from the past 'minutes' minutes.
   def recent
     minutes = params[:minutes] ? params[:minutes].to_i : 60
-    @result = recent_readers(minutes)
+    if configured?
+      @result = recent_readers(minutes)
+    else
+      @result = { 'error' => 'The application is not properly configured.' }
+      logger.error('Cannot retrieve data: A required configuration variable has not been set.')
+    end
     respond_to do |format|
       format.html
       format.json { render :json => @result }
@@ -14,6 +19,11 @@ class DataController < ApplicationController
   
   private
   
+    # Check for the necessary configuration variables.
+    def configured?
+      ENV['GA_PROFILE_ID'] && ENV['GSA_CLIENT_EMAIL'] && ENV['GSA_PRIVATE_KEY']
+    end
+    
     # Get recent readership data as an array of arrays.
     def recent_readers(minutes)
       last_query = Timestamp.find_by(key: 'last_query')
@@ -31,18 +41,16 @@ class DataController < ApplicationController
                       .order(time: :desc).to_a
       rows = []
       readers.each do |reader|
-        unless uri_excluded?(reader.uri)
-          rows.push([reader.time.iso8601,
-                     reader.country,
-                     reader.region,
-                     reader.city,
-                     reader.latitude,
-                     reader.longitude,
-                     reader.title,
-                     reader.uri,
-                     reader.activity,
-                     reader.count])
-        end
+        rows.push([reader.time.iso8601,
+                   reader.country,
+                   reader.region,
+                   reader.city,
+                   reader.latitude,
+                   reader.longitude,
+                   reader.title,
+                   reader.uri,
+                   reader.activity,
+                   reader.count])
       end
       { 'rows' => rows }
     end
@@ -86,6 +94,9 @@ class DataController < ApplicationController
       end
       dims = 'ga:hour,ga:minute,ga:cityId,ga:pageTitle,ga:hostName,ga:pagePath'
       filters = 'ga:cityId!=(not set)'
+      if ENV['GA_FILTERS']
+        filters += ';' + ENV['GA_FILTERS']
+      end
       if activity == 'download'
         filters += ';ga:eventCategory==Bitstream'
         filters += ';ga:eventAction==Download'
@@ -98,9 +109,8 @@ class DataController < ApplicationController
         return false
       end
       
-      # If GA_UTC_OFFSET is not set, treats time in the GA data
-      # as if it is in the local time where this app runs.
-      now = Time.now.getlocal(ENV['GA_UTC_OFFSET'])
+      # Should be the time now in the time zone associated with the GA data.
+      now = Time.now.in_time_zone(ENV['GA_TIME_ZONE'] || 'America/Los_Angeles')
       
       Reader.where(activity: activity).delete_all
       save_reader_rows(rows, now, activity)
@@ -123,19 +133,21 @@ class DataController < ApplicationController
     def save_reader_rows(rows, ref_time, activity)
       rows.each do |row|
         time = Time.new(ref_time.year, ref_time.month, ref_time.day,
-                        row[0], row[1], 0, ENV['GA_UTC_OFFSET'])
+                        row[0], row[1], 0, ref_time.utc_offset)
         loc = Location.find_by(cityId: row[2])
-        path = remove_query(row[5])
-        Reader.create(time: time,
-                      country: loc ? loc.country : nil,
-                      region: loc ? loc.region : nil,
-                      city: loc ? loc.city : nil,
-                      latitude: loc ? loc.latitude : nil,
-                      longitude: loc ? loc.longitude : nil,
-                      title: row[3],
-                      uri: row[4] + path,
-                      activity: activity,
-                      count: row[6])
+        unless loc.nil?
+          path = remove_query(row[5])
+          Reader.create(time: time,
+                        country: loc.country,
+                        region: loc.region,
+                        city: loc.city,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        title: row[3],
+                        uri: row[4] + path,
+                        activity: activity,
+                        count: row[6])
+        end
       end
     end
     
@@ -183,17 +195,5 @@ class DataController < ApplicationController
         end
       end
       path
-    end
-    
-    # Determine whether URI should be excluded.
-    def uri_excluded?(uri)
-      excluded_uris = ENV['EXCLUDED_URIS'] ?
-        ENV['EXCLUDED_URIS'].split(';') : []
-      excluded_uris.each do |pattern|
-        if /#{pattern}/ =~ uri
-          return true
-        end
-      end
-      false
     end
 end
