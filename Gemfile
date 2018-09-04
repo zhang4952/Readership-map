@@ -3,13 +3,13 @@ source 'https://rubygems.org'
 # ruby '2.3.0'
 
 # Google APIs
-gem 'googleauth', '0.5.1'
-gem 'google-api-client', '0.9.3'
+gem 'googleauth', '~> 0.5.1'
+gem 'google-api-client', '~> 0.9.3'
 # Use Figaro for configuration
-gem 'figaro', '1.1.1'
+gem 'figaro', '~> 1.1.1'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.2.4'
+gem 'rails', '~> 5.0.2'
 # Use SCSS for stylesheets
 gem 'sass-rails', '~> 5.0'
 # Use Uglifier as compressor for JavaScript assets
